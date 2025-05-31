@@ -3,7 +3,7 @@ services:
     name: newsly-backend
     env: python
     workingDir: .
-    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput
+    buildCommand: cd backend && pip install -r requirements.txt && pip install dj-database-url && python manage.py collectstatic --noinput
     startCommand: cd backend && gunicorn backend.wsgi:application
     envVars:
       - key: SECRET_KEY
