@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <article class="card shadow-sm">
+                {% if article.image_url %}
+                <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}" style="max-height: 400px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h1 class="card-title h2 mb-4">{{ article.title }}</h1>
+                    <div class="card-text">
+                        {{ article.summary }}
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+{% endblock %} 

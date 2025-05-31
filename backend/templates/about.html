@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}About Newsly.AI{% endblock title %}
+
+{% block content %}
+<div class="about-container">
+    <div class="about-header">
+        <h1>About Newsly.AI</h1>
+        <p class="subtitle">Your AI-Powered News Companion</p>
+    </div>
+
+    <div class="about-content">
+        <section class="about-section">
+            <h2>Our Mission</h2>
+            <p>Newsly.AI is dedicated to revolutionizing how you consume news by leveraging artificial intelligence to deliver personalized, relevant, and engaging content tailored to your interests.</p>
+        </section>
+
+        <section class="about-section">
+            <h2>What We Offer</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Personalized Content</h3>
+                    <p>Get news articles curated specifically for your interests and preferences.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Benefit from advanced AI analysis of article sentiment and reading levels.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Smart Digests</h3>
+                    <p>Receive daily or weekly digests with the most relevant news for you.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Advanced Search</h3>
+                    <p>Find exactly what you're looking for with our powerful search capabilities.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <h2>Our Technology</h2>
+            <p>Newsly.AI combines cutting-edge AI technologies with sophisticated news aggregation to provide you with the most relevant and engaging content. Our platform uses natural language processing and machine learning to understand your preferences and deliver content that matters to you.</p>
+        </section>
+
+        <section class="about-section">
+            <h2>Contact Us</h2>
+            <p>Have questions or feedback? We'd love to hear from you!</p>
+            <a href="mailto:support@newsly.ai" class="contact-btn">Contact Support</a>
+        </section>
+    </div>
+</div>
+
+<style>
+    .about-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .about-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .about-header h1 {
+        color: var(--text);
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+    }
+
+    .about-section {
+        margin-bottom: 3rem;
+    }
+
+    .about-section h2 {
+        color: var(--text);
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .about-section p {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .feature-card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease;
+        border: 1px solid var(--border);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .contact-btn {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.3s ease;
+    }
+
+    .contact-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    @media (max-width: 768px) {
+        .about-container {
+            padding: 1rem;
+        }
+
+        .about-header h1 {
+            font-size: 2rem;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock content %} 

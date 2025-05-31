@@ -1,0 +1,64 @@
+.avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    transform: translate(40px , 10px);
+    background-image: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHdk3MVyCLfnaK-HWunmfHTHBMLKBCcw_AVQ&s");
+    background-position: center top;
+    background-repeat: no-repeat;
+    margin-bottom: 60px;
+    margin-left: 150px;
+}
+.col1 {
+    margin-bottom: 25px;
+    height: 100%;
+    width: 700px;
+}
+
+
+.profile-info{
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 30px;
+    font-size: 20px;
+}
+
+.label {
+    width: 300px;
+    font-weight: bold;
+    color: #242331;
+        margin-left: 20px;
+            font-family: 'Inter';
+
+
+}
+
+.value {
+    flex: 1;
+    color: #242331;
+    font-family: 'Lora';
+}
+
+.row {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.col2 {
+    flex: 1;
+}
+
+.button {
+    transform: translate(-750px, 100px);
+    background-color: #166534;
+    border: 2px solid black;
+    color:black;
+    width: 150px;
+    position: relative;
+    left: 500px;
+    border-radius: 25px;
+    height: 50px;
+}
+.flex {
+    overflow-y: hidden;
+}

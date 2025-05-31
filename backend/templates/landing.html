@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Newsly.AI - Your AI-Powered News Companion{% endblock title %}
+
+{% block content %}
+<div class="landing-container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Your AI-Powered News Companion</h1>
+            <p class="hero-subtitle">Get personalized news updates, AI-powered summaries, and stay informed with the topics that matter to you.</p>
+            <div class="hero-cta">
+                <a href="{% url 'register' %}" class="cta-btn primary">Get Started</a>
+                <a href="#features" class="cta-btn secondary">Learn More</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" alt="AI News Technology">
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <h2>Why Choose Newsly.AI?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Personalized Content</h3>
+                <p>Get news tailored to your interests and preferences, delivered at your preferred time.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Summaries</h3>
+                <p>Quick, accurate summaries of articles using advanced AI technology.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Multiple Formats</h3>
+                <p>Access your news through web, email, or mobile notifications.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Smart Filtering</h3>
+                <p>Advanced filtering to ensure you only see relevant and high-quality content.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works-section">
+        <h2>How It Works</h2>
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Create Your Account</h3>
+                <p>Sign up and tell us about your interests and preferences.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Choose Your Topics</h3>
+                <p>Select the news categories that matter most to you.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Get Personalized Updates</h3>
+                <p>Receive curated news content delivered to your inbox.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Transform Your News Experience?</h2>
+            <p>Join thousands of users who are already enjoying personalized news updates.</p>
+            <div class="cta-buttons">
+                <a href="{% url 'register' %}" class="cta-btn primary">Get Started Now</a>
+                <a href="{% url 'login' %}" class="cta-btn secondary">Sign In</a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .landing-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+        padding: 4rem 0;
+    }
+
+    .hero-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .hero-content h1 {
+        font-size: 3.5rem;
+        line-height: 1.2;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .hero-cta {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .hero-image {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .hero-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Features Section */
+    .features-section {
+        padding: 6rem 0;
+        text-align: center;
+    }
+
+    .features-section h2 {
+        font-size: 2.5rem;
+        color: var(--text);
+        margin-bottom: 3rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-card {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+        color: var(--text);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card p {
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    /* How It Works Section */
+    .how-it-works-section {
+        padding: 6rem 0;
+        background: var(--card-bg);
+        border-radius: 12px;
+        margin: 4rem 0;
+    }
+
+    .how-it-works-section h2 {
+        text-align: center;
+        font-size: 2.5rem;
+        color: var(--text);
+        margin-bottom: 3rem;
+    }
+
+    .steps-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        padding: 0 2rem;
+    }
+
+    .step {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin: 0 auto 1rem;
+    }
+
+    .step h3 {
+        color: var(--text);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .step p {
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        text-align: center;
+        padding: 6rem 0;
+    }
+
+    .cta-content {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .cta-content h2 {
+        font-size: 2.5rem;
+        color: var(--text);
+        margin-bottom: 1rem;
+    }
+
+    .cta-content p {
+        color: var(--text-muted);
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    /* Buttons */
+    .cta-btn {
+        display: inline-block;
+        padding: 1rem 2rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .cta-btn.primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .cta-btn.primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .cta-btn.secondary {
+        background: var(--background);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .cta-btn.secondary:hover {
+        background: var(--card-bg);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .hero-section {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .hero-content h1 {
+            font-size: 2.5rem;
+        }
+
+        .hero-cta {
+            justify-content: center;
+        }
+
+        .hero-image {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .landing-container {
+            padding: 1rem;
+        }
+
+        .hero-content h1 {
+            font-size: 2rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .features-section h2,
+        .how-it-works-section h2,
+        .cta-content h2 {
+            font-size: 2rem;
+        }
+
+        .cta-buttons {
+            flex-direction: column;
+        }
+
+        .cta-btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock content %}

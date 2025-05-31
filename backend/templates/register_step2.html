@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}News Preferences - Newsly.AI{% endblock title %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="step-indicator">
+                <div class="step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Account</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Preferences</div>
+                </div>
+            </div>
+            <h1>News Preferences</h1>
+            <p class="subtitle">Select your interests and preferences to personalize your news feed</p>
+        </div>
+
+        {% if messages %}
+        <div class="alert-container">
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            
+            <!-- News Categories -->
+            <div class="form-section">
+                <h3>News Categories</h3>
+                <p class="section-description">Select the topics you're interested in</p>
+                <div class="interests-grid">
+                    {% for category in categories %}
+                    <div class="interest-item">
+                        <input type="checkbox" id="interest_{{ category.id }}" name="interests" value="{{ category.id }}"
+                            {% if category in user.interests.all %}checked{% endif %}>
+                        <label for="interest_{{ category.id }}">{{ category.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Update Frequency -->
+            <div class="form-section">
+                <h3>Update Frequency</h3>
+                <p class="section-description">How often would you like to receive updates?</p>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="frequency_daily" name="frequency" value="daily" {% if user.frequency == 'daily' %}checked{% endif %}>
+                        <label for="frequency_daily">
+                            <span class="radio-label">Daily</span>
+                            <span class="radio-description">Get updates every day</span>
+                        </label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="frequency_weekly" name="frequency" value="weekly" {% if user.frequency == 'weekly' %}checked{% endif %}>
+                        <label for="frequency_weekly">
+                            <span class="radio-label">Weekly</span>
+                            <span class="radio-description">Get updates once a week</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferred Time -->
+            <div class="form-section">
+                <h3>Preferred Time</h3>
+                <p class="section-description">When would you like to receive your updates?</p>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="time_morning" name="preferred_time" value="morning" {% if user.preferred_time == 'morning' %}checked{% endif %}>
+                        <label for="time_morning">
+                            <span class="radio-label">Morning</span>
+                            <span class="radio-description">6 AM - 12 PM</span>
+                        </label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="time_afternoon" name="preferred_time" value="afternoon" {% if user.preferred_time == 'afternoon' %}checked{% endif %}>
+                        <label for="time_afternoon">
+                            <span class="radio-label">Afternoon</span>
+                            <span class="radio-description">12 PM - 6 PM</span>
+                        </label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="time_evening" name="preferred_time" value="evening" {% if user.preferred_time == 'evening' %}checked{% endif %}>
+                        <label for="time_evening">
+                            <span class="radio-label">Evening</span>
+                            <span class="radio-description">6 PM - 12 AM</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="form-section">
+                <h3>Notification Settings</h3>
+                <p class="section-description">Choose how you want to receive updates</p>
+                <div class="toggle-group">
+                    <div class="toggle-item">
+                        <label for="is_subscribed">Email Digest Subscription</label>
+                        <label class="switch">
+                            <input type="checkbox" id="is_subscribed" name="is_subscribed" {% if user.is_subscribed %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-item">
+                        <label for="email_notifications">Email Notifications</label>
+                        <label class="switch">
+                            <input type="checkbox" id="email_notifications" name="email_notifications" {% if user.email_notifications %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="auth-btn">Complete Registration</button>
+                <a href="{% url 'home' %}" class="skip-link">Skip for now</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 600px;
+        background: var(--card-bg);
+        padding: 2.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .step-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .step.completed .step-number {
+        background: var(--primary);
+        color: white;
+    }
+
+    .step.active .step-number {
+        background: var(--primary);
+        color: white;
+    }
+
+    .step:not(.completed):not(.active) .step-number {
+        background: var(--background);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .step.active .step-label {
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .step-line {
+        width: 60px;
+        height: 1px;
+        background: var(--border);
+        margin: 0 1rem;
+    }
+
+    .auth-header h1 {
+        color: var(--text);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: 1rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section h3 {
+        color: var(--text);
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-description {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .interests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .interest-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .interest-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+    }
+
+    .interest-item label {
+        color: var(--text);
+        cursor: pointer;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .radio-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .radio-item input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        margin-top: 0.25rem;
+    }
+
+    .radio-item label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        cursor: pointer;
+    }
+
+    .radio-label {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .radio-description {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .toggle-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .toggle-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .toggle-item label {
+        color: var(--text);
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--border);
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .auth-btn {
+        background: var(--primary);
+        color: white;
+        padding: 0.875rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .auth-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .skip-link {
+        text-align: center;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: color 0.3s ease;
+    }
+
+    .skip-link:hover {
+        color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 1rem;
+        }
+
+        .auth-card {
+            padding: 2rem;
+        }
+
+        .auth-header h1 {
+            font-size: 1.75rem;
+        }
+
+        .interests-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock content %} 

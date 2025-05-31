@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - Newsly.AI{% endblock title %}
+
+{% block content %}
+<div class="privacy-container">
+    <div class="privacy-header">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last Updated: {{ current_year }}</p>
+    </div>
+
+    <div class="privacy-content">
+        <section class="privacy-section">
+            <h2>Introduction</h2>
+            <p>At Newsly.AI, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our service.</p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>Information We Collect</h2>
+            <div class="info-card">
+                <h3>Personal Information</h3>
+                <ul>
+                    <li>Email address</li>
+                    <li>Name</li>
+                    <li>News preferences and interests</li>
+                    <li>Reading history</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <h3>Usage Information</h3>
+                <ul>
+                    <li>Articles viewed</li>
+                    <li>Search queries</li>
+                    <li>Time spent reading</li>
+                    <li>Device information</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="privacy-section">
+            <h2>How We Use Your Information</h2>
+            <p>We use the information we collect to:</p>
+            <ul>
+                <li>Personalize your news feed</li>
+                <li>Send you news digests</li>
+                <li>Improve our service</li>
+                <li>Analyze usage patterns</li>
+                <li>Communicate with you about our service</li>
+            </ul>
+        </section>
+
+        <section class="privacy-section">
+            <h2>Data Security</h2>
+            <p>We implement appropriate security measures to protect your personal information. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>
+        </section>
+
+        <section class="privacy-section">
+            <h2>Your Rights</h2>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access your personal information</li>
+                <li>Correct inaccurate data</li>
+                <li>Request deletion of your data</li>
+                <li>Opt-out of communications</li>
+                <li>Export your data</li>
+            </ul>
+        </section>
+
+        <section class="privacy-section">
+            <h2>Contact Us</h2>
+            <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+            <a href="mailto:privacy@newsly.ai" class="contact-btn">privacy@newsly.ai</a>
+        </section>
+    </div>
+</div>
+
+<style>
+    .privacy-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .privacy-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .privacy-header h1 {
+        color: var(--text);
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .last-updated {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .privacy-section {
+        margin-bottom: 3rem;
+    }
+
+    .privacy-section h2 {
+        color: var(--text);
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .privacy-section p {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .privacy-section ul {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .privacy-section li {
+        margin-bottom: 0.5rem;
+    }
+
+    .info-card {
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .info-card h3 {
+        color: var(--text);
+        margin-bottom: 1rem;
+    }
+
+    .info-card ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .contact-btn {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.3s ease;
+    }
+
+    .contact-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    @media (max-width: 768px) {
+        .privacy-container {
+            padding: 1rem;
+        }
+
+        .privacy-header h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock content %} 

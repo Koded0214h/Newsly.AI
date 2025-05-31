@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      :root {
+        --primary: #39FF14;
+        --primary-dark: #2ecc40;
+        --background: #242331;
+        --card-bg: #000027;
+        --text: #ffffff;
+        --text-muted: #7fff7f;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        background-color: var(--background);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        padding: 30px 0;
+        background: var(--card-bg);
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        color: var(--primary);
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .content {
+        background: var(--card-bg);
+        padding: 30px;
+        border-radius: 0 0 8px 8px;
+      }
+
+      .article {
+        margin-bottom: 30px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+      }
+
+      .article:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .article-title {
+        color: var(--primary);
+        font-size: 20px;
+        margin: 0 0 10px 0;
+      }
+
+      .article-summary {
+        color: var(--text-muted);
+        margin: 0 0 15px 0;
+      }
+
+      .article-meta {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .read-more {
+        display: inline-block;
+        background: var(--primary);
+        color: var(--card-bg);
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-top: 15px;
+        font-weight: 500;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 20px;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .footer a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 10px;
+        }
+
+        .content {
+          padding: 20px;
+        }
+
+        .article-title {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Your {{ frequency|title }} News Digest</h1>
+      </div>
+
+      <div class="content">
+        <p>Hello {{ user.first_name }},</p>
+        <p>Here are your latest news updates:</p>
+
+        {% for article in articles %}
+          <div class="article">
+            <h2 class="article-title">{{ article.title }}</h2>
+            <p class="article-summary">{{ article.summary }}</p>
+            <div class="article-meta">
+              <span class="article-category">{{ article.category.name }}</span>
+              <span class="article-date">{{ article.created_at|date:"M d, Y" }}</span>
+            </div>
+            <a href="{{ frontend_url }}/article/{{ article.id }}" class="read-more">Read More</a>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="footer">
+        <p>© {{ current_year }} Newsly.AI. All rights reserved.</p>
+        <p>
+          <a href="{{ frontend_url }}/preferences">Manage your preferences</a> |
+          <a href="{{ frontend_url }}/unsubscribe">Unsubscribe</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

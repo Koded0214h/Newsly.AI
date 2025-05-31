@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+        .topic-section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .topic-header {
+            color: #007bff;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #007bff;
+        }
+        .article {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .article-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .article-meta {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .article-summary {
+            margin-top: 5px;
+            color: #444;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .sentiment {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        .sentiment.positive {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .sentiment.negative {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .sentiment.neutral {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Your {{ digest_type|title }} Newsly.AI Digest 📰</h1>
+        <p>{{ date }}</p>
+    </div>
+    
+    <div class="content">
+        <p>Hello {{ user.first_name }},</p>
+        
+        <p>Here's your {{ digest_type }} news digest, curated based on your interests and preferences.</p>
+        
+        {% for topic, articles in articles_by_topic.items %}
+        <div class="topic-section">
+            <h2 class="topic-header">{{ topic }}</h2>
+            
+            {% for article in articles %}
+            <div class="article">
+                <div class="article-title">
+                    {{ article.title }}
+                    <span class="sentiment {% if article.sentiment > 0.3 %}positive{% elif article.sentiment < -0.3 %}negative{% else %}neutral{% endif %}">
+                        {% if article.sentiment > 0.3 %}😊{% elif article.sentiment < -0.3 %}😔{% else %}😐{% endif %}
+                    </span>
+                </div>
+                <div class="article-meta">
+                    Source: {{ article.source }} | {{ article.published_at|date:"F j, Y" }}
+                </div>
+                <div class="article-summary">
+                    {{ article.summary|truncatewords:30 }}
+                </div>
+                <a href="{{ article.url }}" target="_blank" class="button">Read More</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        
+        <p>Want to adjust your news preferences? <a href="http://localhost:8000/preferences">Update your settings</a></p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 Newsly.AI. All rights reserved.</p>
+        <p>This is an automated message, please do not reply directly to this email.</p>
+    </div>
+</body>
+</html> 
