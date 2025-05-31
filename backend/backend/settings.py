@@ -2,6 +2,11 @@ import os
 import dj_database_url
 from pathlib import Path
 import environ
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 env = environ.Env()
 environ.Env.read_env()
@@ -16,7 +21,8 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', default=False)
 
 # API Keys
-NEWS_API_KEY = env('NEWS_API_KEY', default='dummy-key-for-development')
+NEWS_API_KEY = env('NEWS_API_KEY')
+logger.info(f"Loaded NEWS_API_KEY: {NEWS_API_KEY[:5]}..." if NEWS_API_KEY else "NEWS_API_KEY not found!")
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'newsly-ai.onrender.com']
 

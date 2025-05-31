@@ -24,6 +24,8 @@ services:
         sync: false
       - key: DEBUG
         value: false
+      - key: DJANGO_SETTINGS_MODULE
+        value: backend.settings
 
 databases:
   - name: newsly-db

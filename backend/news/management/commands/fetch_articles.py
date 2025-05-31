@@ -47,7 +47,12 @@ def get_topic_for_text(text, topics):
     return best_topic
 
 def fetch_news_articles():
-    logger.info(f"Using NewsAPI key: {settings.NEWS_API_KEY[:5]}...")  # Only log first 5 chars for security
+    # Log the full API key for debugging (only in development)
+    if settings.DEBUG:
+        logger.info(f"Full NewsAPI key: {settings.NEWS_API_KEY}")
+    else:
+        logger.info(f"Using NewsAPI key: {settings.NEWS_API_KEY[:5]}...")  # Only log first 5 chars for security
+    
     url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={settings.NEWS_API_KEY}'
     try:
         response = requests.get(url)
