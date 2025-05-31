@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Newsly.AI{% endblock title %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Profile Settings</h1>
+        <p class="subtitle">Manage your account settings and preferences</p>
+    </div>
+
+    <div class="profile-content">
+        <!-- Personal Information -->
+        <section class="profile-section">
+            <h2>Personal Information</h2>
+            <form method="post" action="{% url 'update_profile' %}" class="profile-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" value="{{ user.email }}" disabled>
+                    <small class="form-text">Email cannot be changed</small>
+                </div>
+                <button type="submit" class="save-btn">Update Profile</button>
+            </form>
+        </section>
+
+        <!-- News Preferences -->
+        <section class="profile-section">
+            <h2>News Preferences</h2>
+            <form method="post" action="{% url 'update_preferences' %}" class="profile-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="frequency">Update Frequency</label>
+                    <select id="frequency" name="frequency" class="form-control">
+                        <option value="daily" {% if user.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                        <option value="weekly" {% if user.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="preferred_time">Preferred Time</label>
+                    <select id="preferred_time" name="preferred_time" class="form-control">
+                        <option value="morning" {% if user.preferred_time == 'morning' %}selected{% endif %}>Morning (6 AM - 12 PM)</option>
+                        <option value="afternoon" {% if user.preferred_time == 'afternoon' %}selected{% endif %}>Afternoon (12 PM - 6 PM)</option>
+                        <option value="evening" {% if user.preferred_time == 'evening' %}selected{% endif %}>Evening (6 PM - 12 AM)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>News Interests</label>
+                    <div class="interests-grid">
+                        {% for category in categories %}
+                        <div class="interest-item">
+                            <input type="checkbox" id="interest_{{ category.id }}" name="interests" value="{{ category.id }}"
+                                {% if category in user.interests.all %}checked{% endif %}>
+                            <label for="interest_{{ category.id }}">{{ category.name }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button type="submit" class="save-btn">Update Preferences</button>
+            </form>
+        </section>
+
+        <!-- Notification Settings -->
+        <section class="profile-section">
+            <h2>Notification Settings</h2>
+            <form method="post" action="{% url 'update_notifications' %}" class="profile-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <div class="toggle-group">
+                        <label for="is_subscribed">Email Digest Subscription</label>
+                        <label class="switch">
+                            <input type="checkbox" id="is_subscribed" name="is_subscribed" {% if user.is_subscribed %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <small class="form-text">Receive regular news digests based on your preferences</small>
+                </div>
+                <div class="form-group">
+                    <div class="toggle-group">
+                        <label for="email_notifications">Email Notifications</label>
+                        <label class="switch">
+                            <input type="checkbox" id="email_notifications" name="email_notifications" {% if user.email_notifications %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <small class="form-text">Receive notifications about important updates</small>
+                </div>
+                <button type="submit" class="save-btn">Update Notifications</button>
+            </form>
+        </section>
+
+        <!-- Account Management -->
+        <section class="profile-section">
+            <h2>Account Management</h2>
+            <div class="account-actions">
+                <a href="{% url 'change_password' %}" class="action-btn">Change Password</a>
+                <form method="post" action="{% url 'delete_account' %}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="delete-btn">Delete Account</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+    .profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .profile-header h1 {
+        color: var(--text);
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+    }
+
+    .profile-section {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+
+    .profile-section h2 {
+        color: var(--text);
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .form-control {
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--background);
+        color: var(--text);
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        outline: none;
+    }
+
+    .form-text {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .interests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .interest-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .toggle-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--border);
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .save-btn {
+        background: var(--primary);
+        color: white;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.3s ease;
+    }
+
+    .save-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .account-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        display: inline-block;
+        padding: 0.75rem;
+        border-radius: 6px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border);
+        background: var(--background);
+        color: var(--text);
+    }
+
+    .action-btn:hover {
+        background: var(--card-bg);
+    }
+
+    .delete-form {
+        flex: 1;
+    }
+
+    .delete-btn {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 6px;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid var(--danger);
+        background: var(--danger);
+        color: white;
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        background: var(--danger-dark);
+    }
+
+    @media (max-width: 768px) {
+        .profile-container {
+            padding: 1rem;
+        }
+
+        .profile-header h1 {
+            font-size: 2rem;
+        }
+
+        .account-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock content %} 
