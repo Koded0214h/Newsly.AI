@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 env = environ.Env()
-environ.Env.read_env()
+environ.Env.read_env(env_file=str(Path(__file__).resolve().parent.parent / '.env'))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
