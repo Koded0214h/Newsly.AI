@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from datetime import time
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -32,16 +33,28 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
-    interests = models.ManyToManyField(Topic, blank=True)
-    frequency = models.CharField(max_length=10, choices=[('daily', 'Daily'), ('weekly', 'Weekly')], default='daily')
-    preferred_time = models.TimeField(default=timezone.now)
+    interests = models.ManyToManyField('Category', related_name='interested_users', blank=True)
+    frequency = models.CharField(max_length=20, choices=[('daily', 'Daily'), ('weekly', 'Weekly')], default='daily')
+    preferred_time = models.TimeField(default=time(8, 0))
     is_subscribed = models.BooleanField(default=True)
     last_digest_sent = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
-    groups = models.ManyToManyField(Group, blank=True, related_name='custom_user_groups')
-    user_permissions = models.ManyToManyField(Permission, blank=True, related_name='custom_user_permissions')
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='news_user_set',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        verbose_name='groups',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='news_user_set',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions',
+    )
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -60,22 +73,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         # Then delete the user
         super().delete(*args, **kwargs)
 
-class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(unique=True)
-    is_subscribed = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.email
-
 class UserPreference(models.Model):
     FREQUENCY_CHOICES = [
         ('daily', 'Daily'),
         ('weekly', 'Weekly'),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userpreference')
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='userpreference')
     frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='daily')
     categories = models.ManyToManyField('Category', related_name='preferred_by')
     created_at = models.DateTimeField(auto_now_add=True)
