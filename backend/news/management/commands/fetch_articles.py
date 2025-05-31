@@ -14,6 +14,7 @@ from sumy.utils import get_stop_words
 import nltk
 from bs4 import BeautifulSoup
 import html
+from django.conf import settings
 
 # Download required NLTK data
 try:
@@ -22,7 +23,6 @@ except LookupError:
     nltk.download('punkt', quiet=True)
 
 logger = logging.getLogger(__name__)
-API_KEY = '4f9ba8d377d242d1b8b643eae88e15a6'
 
 TOPIC_KEYWORDS = {
     "Business": {"business", "economy", "market", "stock", "trade", "finance", "bank", "investment", "company", "corporate", "dollar", "profit", "revenue", "shares", "stock market", "wall street"},
@@ -47,7 +47,7 @@ def get_topic_for_text(text, topics):
     return best_topic
 
 def fetch_news_articles():
-    url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={API_KEY}'
+    url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={settings.NEWS_API_KEY}'
     try:
         response = requests.get(url)
         response.raise_for_status()
