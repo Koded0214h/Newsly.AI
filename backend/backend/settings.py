@@ -22,7 +22,10 @@ DEBUG = env('DEBUG', default=False)
 
 # API Keys
 NEWS_API_KEY = env('NEWS_API_KEY')
-logger.info(f"Loaded NEWS_API_KEY: {NEWS_API_KEY[:5]}..." if NEWS_API_KEY else "NEWS_API_KEY not found!")
+if NEWS_API_KEY:
+    logger.info(f"Loaded NEWS_API_KEY: {NEWS_API_KEY}")  # Full key for debugging, remove after verification
+else:
+    logger.info("NEWS_API_KEY not found!")
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'newsly-ai.onrender.com']
 
