@@ -2,15 +2,18 @@ services:
   - type: web
     name: newsly-backend
     env: python
-    buildCommand: pip install -r ../requirements.txt
-    startCommand: gunicorn backend.wsgi:application
-    workingDir: backend
+    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: cd backend && gunicorn backend.wsgi:application
     envVars:
       - key: SECRET_KEY
-        value: your_secret_key
+        value: django-insecure-your-secret-key-here
       - key: DEBUG
         value: False
       - key: DATABASE_URL
         fromDatabase:
           name: newsly-db
           property: connectionString
+      - key: EMAIL_HOST_USER
+        value: coder0214h@gmail.com
+      - key: EMAIL_HOST_PASSWORD
+        value: onuopumpcgbwolbo
