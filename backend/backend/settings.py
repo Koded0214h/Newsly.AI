@@ -64,7 +64,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 DATABASES = {
-    'default': dj_database_url.config(default=env('DATABASE_URL'))
+    'default': dj_database_url.config(default=env('DATABASE_URL'), conn_max_age=600)
 }
 
 # Password validation
@@ -117,3 +117,24 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # OpenAI Configuration
 OPENAI_API_KEY = env('OPENAI_API_KEY') 
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}

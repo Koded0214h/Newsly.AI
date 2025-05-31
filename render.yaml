@@ -15,7 +15,7 @@ services:
           name: newsly-db
           property: connectionString
       - key: OPENAI_API_KEY
-        sync: false
+        value: sk-your-openai-api-key-here
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
