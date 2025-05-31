@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Complete Your Profile</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Frequency -->
+                        <div class="mb-3">
+                            <label for="id_frequency" class="form-label">How often would you like to receive news?</label>
+                            <select name="frequency" id="id_frequency" class="form-select">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+
+                        <!-- Preferred Time -->
+                        <div class="mb-3">
+                            <label for="id_preferred_time" class="form-label">Preferred time for news digest</label>
+                            <input type="time" name="preferred_time" id="id_preferred_time" class="form-control" value="08:00">
+                        </div>
+
+                        <!-- Interests -->
+                        <div class="mb-3">
+                            <label class="form-label">Select your interests</label>
+                            <div class="row">
+                                {% for category in newsform.interests %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        {{ category }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Newsletter Subscription -->
+                        <div class="mb-3 form-check">
+                            {{ newsform.is_subscribed }}
+                            <label class="form-check-label" for="id_is_subscribed">
+                                Subscribe to newsletter
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Complete Registration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check {
+    margin-bottom: 0.5rem;
+}
+.form-check-input {
+    margin-right: 0.5rem;
+}
+.interests-select {
+    height: 200px;
+}
+</style>
+{% endblock %} 
