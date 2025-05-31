@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Profile</h3>
+                </div>
+                <div class="card-body">
+                    <h5>{{ user.get_full_name }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    <div class="mt-3">
+                        <h6>Interests:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for interest in user.interests.all %}
+                                <span class="badge bg-primary">{{ interest.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Preferences:</h6>
+                        <ul class="list-unstyled">
+                            <li>Update Frequency: {{ user.frequency }}</li>
+                            <li>Preferred Time: {{ user.preferred_time }}</li>
+                            <li>Email Subscription: {% if user.is_subscribed %}Yes{% else %}No{% endif %}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Settings</h3>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'update_profile' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Update Profile</h5>
+                                <small class="text-muted">Edit personal information</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'update_preferences' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">News Preferences</h5>
+                                <small class="text-muted">Update interests and preferences</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'update_notifications' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Notification Settings</h5>
+                                <small class="text-muted">Manage email notifications</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Change Password</h5>
+                                <small class="text-muted">Update your password</small>
+                            </div>
+                        </a>
+                        <a href="{% url 'delete_account' %}" class="list-group-item list-group-item-action text-danger">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Delete Account</h5>
+                                <small class="text-muted">Permanently delete your account</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

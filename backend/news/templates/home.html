@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Search articles..." value="{{ request.GET.search }}">
+                <select name="topic" class="form-select" style="max-width: 200px;">
+                    <option value="">All Topics</option>
+                    {% for category in categories %}
+                        <option value="{{ category.name }}" {% if request.GET.topic == category.name %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Articles Grid -->
+    <div class="row row-cols-1 row-cols-md-3 g-4" id="articles-container">
+        {% for article in articles_page %}
+            <div class="col">
+                <div class="card h-100">
+                    {% if article.image_url %}
+                        <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ article.title }}</h5>
+                        <p class="card-text">{{ article.summary|truncatewords:30 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ article.created_at|date:"M d, Y" }}</small>
+                            <a href="{% url 'article_detail' article.id %}" class="btn btn-outline-primary btn-sm">Read More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No articles found. Try adjusting your filters.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if articles_page.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if articles_page.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles_page.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.topic %}&topic={{ request.GET.topic }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+
+                {% for num in articles_page.paginator.page_range %}
+                    {% if articles_page.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.topic %}&topic={{ request.GET.topic }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if articles_page.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles_page.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.topic %}&topic={{ request.GET.topic }}{% endif %}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %} 
