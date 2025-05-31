@@ -2,9 +2,9 @@ services:
   - type: web
     name: newsly-backend
     env: python
-    workingDir: backend
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: gunicorn backend.wsgi:application
+    workingDir: .
+    buildCommand: cd backend && pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: cd backend && gunicorn backend.wsgi:application
     envVars:
       - key: SECRET_KEY
         value: django-insecure-your-secret-key-here
