@@ -14,16 +14,28 @@ class RegisterForm_Personal(UserCreationForm):
 class RegisterForm_News(forms.ModelForm):
     is_subscribed = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={'class': 'checkbox-input'}),
-        label='Subscribe to newsletter'
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Subscribe to newsletter',
+        initial=True
     )
     
     class Meta:
         model = CustomUser
         fields = ['interests', 'frequency', 'preferred_time', 'is_subscribed']
         widgets = {
-            'preferred_time': forms.TimeInput(attrs={'type': 'time'}),
-            'interests': forms.SelectMultiple(attrs={'class': 'interests-select'}),
+            'preferred_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control'
+            }),
+            'interests': forms.CheckboxSelectMultiple(attrs={
+                'class': 'form-check-input'
+            }),
+            'frequency': forms.Select(attrs={
+                'class': 'form-select'
+            }, choices=[
+                ('daily', 'Daily'),
+                ('weekly', 'Weekly')
+            ])
         }
         
 

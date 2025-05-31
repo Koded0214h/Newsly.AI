@@ -15,30 +15,23 @@
                         <!-- Frequency -->
                         <div class="mb-3">
                             <label for="id_frequency" class="form-label">How often would you like to receive news?</label>
-                            <select name="frequency" id="id_frequency" class="form-select">
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                            </select>
+                            {{ newsform.frequency }}
                         </div>
 
                         <!-- Preferred Time -->
                         <div class="mb-3">
                             <label for="id_preferred_time" class="form-label">Preferred time for news digest</label>
-                            <input type="time" name="preferred_time" id="id_preferred_time" class="form-control" value="08:00">
+                            {{ newsform.preferred_time }}
                         </div>
 
                         <!-- Interests -->
                         <div class="mb-3">
                             <label class="form-label">Select your interests</label>
                             <div class="row">
-                                {% for category in newsform.interests.field.queryset %}
+                                {% for checkbox in newsform.interests %}
                                 <div class="col-md-4">
                                     <div class="form-check">
-                                        <input type="checkbox" name="interests" value="{{ category.id }}" 
-                                               class="form-check-input" id="category_{{ category.id }}">
-                                        <label class="form-check-label" for="category_{{ category.id }}">
-                                            {{ category.name }}
-                                        </label>
+                                        {{ checkbox }}
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -69,9 +62,6 @@
 }
 .form-check-input {
     margin-right: 0.5rem;
-}
-.interests-select {
-    height: 200px;
 }
 </style>
 {% endblock %} 

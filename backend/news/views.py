@@ -52,19 +52,22 @@ def register1(request):
 
 def register2(request):
     # Check if user has completed first step
-    print("Session data at register2 start:", request.session.get('registration_data'))
-    if 'registration_data' not in request.session:
-        messages.error(request, 'Please complete the first step of registration')
+    if not all(key in request.session for key in ['email', 'first_name', 'last_name', 'password1']):
         return redirect('register1')
-        
-    if request.method == "POST":
+    
+    if request.method == 'POST':
         form = RegisterForm_News(request.POST)
         if form.is_valid():
-            # Get data from first step
-            personal_data = request.session['registration_data']
+            # Get personal data from session
+            personal_data = {
+                'email': request.session['email'],
+                'first_name': request.session['first_name'],
+                'last_name': request.session['last_name'],
+                'password1': request.session['password1']
+            }
             print("Personal data from session:", personal_data)
             
-            # Create user with all data
+            # Create user with personal data
             user = CustomUser.objects.create_user(
                 email=personal_data['email'],
                 password=personal_data['password1'],
@@ -72,63 +75,38 @@ def register2(request):
                 last_name=personal_data['last_name']
             )
             
-            # Add news preferences
-            user.interests.set(form.cleaned_data['interests'])
+            # Set additional fields from form
             user.frequency = form.cleaned_data['frequency']
             user.preferred_time = form.cleaned_data['preferred_time']
             user.is_subscribed = form.cleaned_data['is_subscribed']
+            
+            # Add interests
+            interests = form.cleaned_data.get('interests', [])
+            if interests:
+                user.interests.set(interests)
+            
             user.save()
             
             # Clear session data
-            del request.session['registration_data']
+            for key in ['email', 'first_name', 'last_name', 'password1']:
+                request.session.pop(key, None)
+            
+            # Log the user in
+            login(request, user)
             
             # Send welcome email
             try:
-                if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-                    raise ValueError("Email host user or password is not set in environment variables.")
                 print(f"Attempting to send welcome email to {user.email}")
-                
-                # Create the message
-                message = MIMEMultipart()
-                message["From"] = settings.EMAIL_HOST_USER
-                message["To"] = user.email
-                message["Subject"] = "Welcome to Newsly.AI! 🎉"
-
-                # Render the HTML content
-                html_content = render_to_string('welcome_email.html', {
-                    'user': user,
-                })
-                print("HTML content rendered successfully")
-
-                # Attach HTML content
-                message.attach(MIMEText(html_content, "html"))
-
-                # Send email using SSL
-                print(f"Connecting to SMTP server: {settings.EMAIL_HOST}:465")  # Hardcoded port 465
-                server = smtplib.SMTP_SSL(settings.EMAIL_HOST, 465)  # Hardcoded port 465
-                print("SMTP connection established")
-                
-                print("Attempting to login to SMTP server")
-                server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-                print("SMTP login successful")
-                
-                text = message.as_string()
-                print("Sending email...")
-                server.sendmail(settings.EMAIL_HOST_USER, user.email, text)
-                print("Email sent successfully")
-                server.quit()
-                
-                messages.success(request, 'Registration successful! Welcome email sent.')
+                send_welcome_email(user)
             except Exception as e:
                 print(f"Error sending welcome email: {str(e)}")
-                messages.warning(request, f'Registration successful, but failed to send welcome email: {str(e)}')
             
-            # Log user in
-            login(request, user)
+            # Fetch initial articles
             try:
                 call_command('fetch_articles')
             except Exception as e:
                 print(f"Error running fetch_articles command: {str(e)}")
+            
             return redirect('home')
         else:
             print("Form errors in register2:", form.errors)
