@@ -84,6 +84,10 @@ def register2(request):
             interests = form.cleaned_data.get('interests', [])
             if interests:
                 user.interests.set(interests)
+            else:
+                # Set default interests if none selected
+                default_interests = Category.objects.filter(name__in=['Technology', 'Business', 'Science'])
+                user.interests.set(default_interests)
             
             user.save()
             
@@ -117,7 +121,9 @@ def register2(request):
         form = RegisterForm_News()
         print("GET request to register2, session data:", request.session.get('registration_data'))
     
-    return render(request, 'register2.html', {'newsform': form})
+    # Get all categories for the form
+    categories = Category.objects.all()
+    return render(request, 'register2.html', {'newsform': form, 'categories': categories})
 
 from django.core.management import call_command
 

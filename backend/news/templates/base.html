@@ -197,6 +197,46 @@
                 text-align: center;
             }
         }
+
+        /* Interests Grid */
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .interest-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        
+        .interest-item:hover {
+            background: #e9ecef;
+        }
+        
+        .interest-item input[type="checkbox"] {
+            margin: 0;
+        }
+        
+        .interest-item label {
+            margin: 0;
+            cursor: pointer;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-description {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
