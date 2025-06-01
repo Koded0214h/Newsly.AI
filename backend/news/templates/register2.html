@@ -6,8 +6,19 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>Complete Your Profile</h1>
-            <p class="subtitle">Tell us about your news preferences</p>
+            <div class="step-indicator">
+                <div class="step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Account</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Preferences</div>
+                </div>
+            </div>
+            <h1>News Preferences</h1>
+            <p class="subtitle">Select your interests and preferences to personalize your news feed</p>
         </div>
 
         {% if messages %}
@@ -30,27 +41,61 @@
                 <div class="interests-grid">
                     {{ newsform.interests }}
                 </div>
+                {% if newsform.interests.errors %}
+                <div class="invalid-feedback">
+                    {% for error in newsform.interests.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
 
-            <!-- Other form fields -->
-            {% for field in newsform %}
-                {% if field.name != 'interests' %}
-                <div class="form-group {% if field.name == 'is_subscribed' or field.name == 'email_notifications' %}toggle-group{% endif %}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}
-                    <small class="help-text">{{ field.help_text }}</small>
-                    {% endif %}
-                    {% if field.errors %}
+            <!-- Update Frequency -->
+            <div class="form-section">
+                <h3>Update Frequency</h3>
+                <p class="section-description">How often would you like to receive updates?</p>
+                <div class="form-group">
+                    {{ newsform.frequency }}
+                    {% if newsform.frequency.errors %}
                     <div class="invalid-feedback">
-                        {% for error in field.errors %}
+                        {% for error in newsform.frequency.errors %}
                         {{ error }}
                         {% endfor %}
                     </div>
                     {% endif %}
                 </div>
-                {% endif %}
-            {% endfor %}
+            </div>
+
+            <!-- Preferred Time -->
+            <div class="form-section">
+                <h3>Preferred Time</h3>
+                <p class="section-description">When would you like to receive your updates?</p>
+                <div class="form-group">
+                    {{ newsform.preferred_time }}
+                    {% if newsform.preferred_time.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in newsform.preferred_time.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="form-section">
+                <h3>Notification Settings</h3>
+                <p class="section-description">Choose how you want to receive updates</p>
+                <div class="toggle-group">
+                    <div class="toggle-item">
+                        <label for="{{ newsform.is_subscribed.id_for_label }}">Email Digest Subscription</label>
+                        <label class="switch">
+                            {{ newsform.is_subscribed }}
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             <div class="form-actions">
                 <button type="submit" class="auth-btn">Complete Registration</button>
@@ -71,9 +116,9 @@
 
     .auth-card {
         width: 100%;
-        max-width: 500px;
+        max-width: 600px;
         background: var(--card-bg);
-        padding: 2rem;
+        padding: 2.5rem;
         border-radius: 12px;
         border: 1px solid var(--border);
         box-shadow: var(--shadow-sm);
@@ -84,15 +129,89 @@
         margin-bottom: 2rem;
     }
 
+    .step-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .step.completed .step-number {
+        background: var(--primary);
+        color: white;
+    }
+
+    .step.active .step-number {
+        background: var(--primary);
+        color: white;
+    }
+
+    .step:not(.completed):not(.active) .step-number {
+        background: var(--background);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .step.active .step-label {
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .step-line {
+        width: 60px;
+        height: 1px;
+        background: var(--border);
+        margin: 0 1rem;
+    }
+
     .auth-header h1 {
         color: var(--text);
-        font-size: 1.75rem;
+        font-size: 2rem;
         margin-bottom: 0.5rem;
     }
 
     .subtitle {
         color: var(--text-muted);
         font-size: 1rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section h3 {
+        color: var(--text);
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-description {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
     }
 
     .form-group {
@@ -106,77 +225,33 @@
         margin-bottom: 0.75rem;
     }
 
-    .help-text {
-        display: block;
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
-
     .invalid-feedback {
         color: var(--error);
         font-size: 0.875rem;
         margin-top: 0.25rem;
     }
 
-    /* Style form fields */
-    .form-group input[type="text"],
-    .form-group input[type="email"],
-    .form-group input[type="password"],
-    .form-group select {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--background);
-        color: var(--text);
-        transition: border-color 0.3s ease;
-    }
-
-    .form-group input[type="text"]:focus,
-    .form-group input[type="email"]:focus,
-    .form-group input[type="password"]:focus,
-    .form-group select:focus {
-        border-color: var(--primary);
-        outline: none;
-    }
-
-    /* Style radio buttons and checkboxes */
-    .form-group input[type="radio"],
-    .form-group input[type="checkbox"] {
-        margin-right: 0.5rem;
-    }
-
-    .form-group input[type="radio"] + label,
-    .form-group input[type="checkbox"] + label {
-        color: var(--text);
-        font-weight: normal;
-        cursor: pointer;
-    }
-
-    /* Style toggle switches */
     .toggle-group {
         display: flex;
         flex-direction: column;
         gap: 1rem;
     }
 
-    .toggle-group .form-group {
+    .toggle-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0;
     }
 
-    .toggle-group label {
-        margin-bottom: 0;
+    .toggle-item label {
+        color: var(--text);
     }
 
     .switch {
         position: relative;
         display: inline-block;
-        width: 44px;
-        height: 22px;
+        width: 50px;
+        height: 24px;
     }
 
     .switch input {
@@ -194,7 +269,7 @@
         bottom: 0;
         background-color: var(--border);
         transition: .4s;
-        border-radius: 22px;
+        border-radius: 24px;
     }
 
     .slider:before {
@@ -202,8 +277,8 @@
         content: "";
         height: 16px;
         width: 16px;
-        left: 3px;
-        bottom: 3px;
+        left: 4px;
+        bottom: 4px;
         background-color: white;
         transition: .4s;
         border-radius: 50%;
@@ -214,7 +289,7 @@
     }
 
     input:checked + .slider:before {
-        transform: translateX(22px);
+        transform: translateX(26px);
     }
 
     .form-actions {
@@ -257,7 +332,11 @@
         }
 
         .auth-card {
-            padding: 1.5rem;
+            padding: 2rem;
+        }
+
+        .auth-header h1 {
+            font-size: 1.75rem;
         }
     }
 </style>

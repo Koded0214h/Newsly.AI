@@ -10,13 +10,15 @@
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
-            --background: #ffffff;
-            --card-bg: #ffffff;
             --text: #1f2937;
             --text-muted: #6b7280;
+            --background: #ffffff;
+            --card-bg: #ffffff;
             --border: #e5e7eb;
-            --shadow: rgba(0, 0, 0, 0.05);
-            --hover-bg: #f3f4f6;
+            --error: #dc2626;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
 
         * {
@@ -26,20 +28,10 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
             color: var(--text);
-            background-color: var(--background);
-        }
-
-        a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        a:hover {
-            color: var(--primary-dark);
+            background: var(--background);
         }
 
         .container {
@@ -48,9 +40,10 @@
             padding: 0 1rem;
         }
 
+        /* Navbar Styles */
         .navbar {
             background: var(--card-bg);
-            box-shadow: 0 1px 3px var(--shadow);
+            border-bottom: 1px solid var(--border);
             padding: 1rem 0;
             position: sticky;
             top: 0;
@@ -67,97 +60,62 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--primary);
+            text-decoration: none;
         }
 
         .navbar-nav {
             display: flex;
-            gap: 1.5rem;
             align-items: center;
+            gap: 1.5rem;
         }
 
         .nav-link {
             color: var(--text);
+            text-decoration: none;
             font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.3s ease;
+            transition: color 0.3s ease;
+            padding: 0.5rem;
         }
 
         .nav-link:hover {
-            background: var(--hover-bg);
             color: var(--primary);
         }
 
-        .btn {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .mobile-menu-btn {
+            display: none;
+            background: none;
             border: none;
+            cursor: pointer;
+            padding: 0.5rem;
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
+        .mobile-menu-btn svg {
+            width: 24px;
+            height: 24px;
             color: var(--text);
         }
 
-        .btn-outline:hover {
-            background: var(--hover-bg);
-            border-color: var(--text);
-        }
-
+        /* Alert Styles */
         .alert {
             padding: 1rem;
-            border-radius: 6px;
             margin-bottom: 1rem;
-        }
-
-        .alert-success {
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            border-radius: 6px;
+            border: 1px solid transparent;
         }
 
         .alert-error {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
+            background-color: #fee2e2;
+            border-color: #fecaca;
+            color: var(--error);
         }
 
-        .alert-warning {
-            background: #fffbeb;
-            color: #92400e;
-            border: 1px solid #fef3c7;
+        .alert-success {
+            background-color: #dcfce7;
+            border-color: #bbf7d0;
+            color: #166534;
         }
 
-        .form-control {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
+        /* Form Styles */
         .form-group {
             margin-bottom: 1rem;
         }
@@ -181,23 +139,6 @@
             margin-bottom: 2rem;
         }
 
-        @media (max-width: 768px) {
-            .navbar-content {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .navbar-nav {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .nav-link {
-                width: 100%;
-                text-align: center;
-            }
-        }
-
         /* Interests Grid */
         .interests-grid {
             display: grid;
@@ -211,13 +152,14 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border);
             border-radius: 4px;
-            background: #f8f9fa;
+            background: var(--background);
+            transition: background-color 0.3s ease;
         }
         
         .interest-item:hover {
-            background: #e9ecef;
+            background: #f8f9fa;
         }
         
         .interest-item input[type="checkbox"] {
@@ -234,8 +176,46 @@
         }
         
         .section-description {
-            color: #6c757d;
+            color: var(--text-muted);
             margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .navbar-content {
+                position: relative;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .navbar-nav {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--card-bg);
+                padding: 1rem;
+                flex-direction: column;
+                align-items: stretch;
+                border: 1px solid var(--border);
+                border-radius: 0 0 8px 8px;
+                box-shadow: var(--shadow-md);
+            }
+
+            .navbar-nav.active {
+                display: flex;
+            }
+
+            .nav-link {
+                padding: 0.75rem;
+                border-radius: 4px;
+            }
+
+            .nav-link:hover {
+                background: #f8f9fa;
+            }
         }
     </style>
 </head>
@@ -243,7 +223,12 @@
     <nav class="navbar">
         <div class="container navbar-content">
             <a href="{% url 'home' %}" class="navbar-brand">Newsly.AI</a>
-            <div class="navbar-nav">
+            <button class="mobile-menu-btn" onclick="toggleMenu()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div class="navbar-nav" id="navbarNav">
                 <a href="{% url 'home' %}" class="nav-link">Home</a>
                 <a href="{% url 'about' %}" class="nav-link">About</a>
                 <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
@@ -270,5 +255,12 @@
         {% block content %}
         {% endblock content %}
     </main>
+
+    <script>
+        function toggleMenu() {
+            const navbarNav = document.getElementById('navbarNav');
+            navbarNav.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
