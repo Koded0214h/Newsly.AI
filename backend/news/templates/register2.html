@@ -39,7 +39,13 @@
                 <h3>News Categories</h3>
                 <p class="section-description">Select the topics you're interested in</p>
                 <div class="interests-grid">
-                    {{ newsform.interests }}
+                    {% for category in categories %}
+                    <div class="interest-item">
+                        <input type="checkbox" id="id_interests_{{ category.id }}" name="interests" value="{{ category.id }}"
+                            {% if category in newsform.initial.interests.all %}checked{% endif %}>
+                        <label for="id_interests_{{ category.id }}">{{ category.name }}</label>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% if newsform.interests.errors %}
                 <div class="invalid-feedback">
