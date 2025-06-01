@@ -126,8 +126,8 @@
         <p>Hello {{ user.first_name }},</p>
         <p>Here are your latest news updates:</p>
 
-        {% for article in articles %}
-          <div class="article">
+      {% for article in articles %}
+        <div class="article">
             <h2 class="article-title">{{ article.title }}</h2>
             <p class="article-summary">{{ article.summary }}</p>
             <div class="article-meta">
@@ -135,8 +135,8 @@
               <span class="article-date">{{ article.created_at|date:"M d, Y" }}</span>
             </div>
             <a href="{{ frontend_url }}/article/{{ article.id }}" class="read-more">Read More</a>
-          </div>
-        {% endfor %}
+        </div>
+      {% endfor %}
       </div>
 
       <div class="footer">

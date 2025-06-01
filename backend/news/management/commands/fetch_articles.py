@@ -15,6 +15,8 @@ import nltk
 from bs4 import BeautifulSoup
 import html
 from django.conf import settings
+from datetime import datetime, timedelta
+import openai
 
 # Download required NLTK data
 try:
@@ -129,7 +131,7 @@ def get_full_article_content(url):
             elif 'abcnews.go.com' in url:
                 content_div = soup.find('div', {'class': 'article-copy'})
                 if content_div:
-                    paragraphs = content_div.find_all('p')
+        paragraphs = content_div.find_all('p')
                     content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
         
         # Strategy 3: Fallback to body if no specific container found
@@ -363,29 +365,83 @@ def enrich_article(article):
     logger.info(f"✨ Enriched: {article.title}")
 
 class Command(BaseCommand):
-    help = 'Fetches top headlines from News API and stores them in the database'
+    help = 'Fetches news articles using OpenAI'
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--recategorize',
-            action='store_true',
-            help='Recategorize existing articles'
-        )
-
-    def handle(self, *args, **options):
-        if options['recategorize']:
-            self.stdout.write("🔄 Recategorizing existing articles...")
-            recategorize_existing_articles()
-            self.stdout.write(self.style.SUCCESS("✅ Recategorization complete!"))
-            return
-
-        self.stdout.write("🚀 Fetching news...")
-        articles = fetch_news_articles()
-        
-        if not articles:
-            self.stdout.write(self.style.ERROR("❌ No articles fetched from NewsAPI"))
-            return
+    def handle(self, *args, **kwargs):
+        try:
+            # Get all categories
+            categories = Category.objects.all()
             
-        self.stdout.write(self.style.SUCCESS(f"📰 Retrieved {len(articles)} articles"))
-        store_articles(articles)
-        self.stdout.write(self.style.SUCCESS("✅ Done.")) 
+            # Generate articles for each category
+            for category in categories:
+                # Check if we need to generate new articles
+                last_article = Article.objects.filter(category=category).order_by('-created_at').first()
+                
+                if not last_article or (datetime.now() - last_article.created_at) > timedelta(hours=24):
+                    # Generate new article
+                    article = self.generate_news_content(category)
+                    if article:
+                        self.stdout.write(self.style.SUCCESS(f'Generated new article for {category.name}: {article.title}'))
+                    else:
+                        self.stdout.write(self.style.WARNING(f'Failed to generate article for {category.name}'))
+                        
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error in fetch_articles: {str(e)}'))
+
+    def generate_news_content(self, category):
+        """Generate news content for a given category using OpenAI."""
+        try:
+            # Set up OpenAI client
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            
+            # Create a prompt for the category
+            prompt = f"""Generate a realistic news article about {category.name}. 
+            The article should be informative, engaging, and current.
+            Include:
+            1. A catchy headline
+            2. A detailed article body (at least 500 words)
+            3. A brief summary (2-3 sentences)
+            
+            Format the response as JSON with these fields:
+            {{
+                "title": "article headline",
+                "content": "full article content",
+                "summary": "brief summary"
+            }}
+            """
+            
+            # Generate content using OpenAI
+            response = client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=[
+                    {"role": "system", "content": "You are a professional news writer. Write realistic, engaging news articles."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2000
+            )
+            
+            # Parse the response
+            content = response.choices[0].message.content
+            import json
+            article_data = json.loads(content)
+            
+            # Create a unique URL (using timestamp and category)
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
+            
+            # Create the article
+            article = Article.objects.create(
+                title=article_data['title'],
+                content=article_data['content'],
+                summary=article_data['summary'],
+                url=url,
+                category=category,
+                created_at=datetime.now()
+            )
+            
+            return article
+            
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error generating news content: {str(e)}'))
+            return None 

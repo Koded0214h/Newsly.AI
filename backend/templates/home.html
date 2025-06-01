@@ -32,14 +32,14 @@
 </div>
 
 <div class="news-grid">
-    {% for article in articles %}
+            {% for article in articles %}
     <article class="news-card">
-        {% if article.image_url %}
+                    {% if article.image_url %}
         <div class="news-card-image-container">
             <img src="{{ article.image_url }}" alt="{{ article.title }}" class="news-card-image">
             <div class="news-card-category">{{ article.category.name }}</div>
-        </div>
-        {% endif %}
+                    </div>
+                    {% endif %}
         <div class="news-card-content">
             <h2 class="news-card-title">{{ article.title }}</h2>
             <p class="news-card-summary">{{ article.summary|truncatewords:30 }}</p>
@@ -47,14 +47,14 @@
                 <div class="meta-left">
                     <span class="news-card-date">{{ article.created_at|date:"M d, Y" }}</span>
                     <span class="news-card-source">{{ article.source }}</span>
-                </div>
+                        </div>
                 <div class="meta-right">
                     <span class="sentiment-indicator {% if article.sentiment_score > 0 %}positive{% elif article.sentiment_score < 0 %}negative{% endif %}">
                         {% if article.sentiment_score > 0 %}😊{% elif article.sentiment_score < 0 %}😔{% else %}😐{% endif %}
-                    </span>
+                                </span>
                     <span class="reading-level">📚 {{ article.reading_level }}</span>
-                </div>
-            </div>
+                            </div>
+                        </div>
             <a href="{% url 'article_detail' article.id %}" class="read-more-btn">
                 Read More
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -62,10 +62,10 @@
                     <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
             </a>
-        </div>
+                    </div>
     </article>
     {% empty %}
-    <div class="no-articles">
+            <div class="no-articles">
         <div class="no-articles-content">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -74,27 +74,27 @@
             </svg>
             <h3>No Articles Found</h3>
             <p>Try adjusting your filters or check back later for new content.</p>
-        </div>
+            </div>
     </div>
     {% endfor %}
-</div>
+    </div>
 
-{% if articles.has_other_pages %}
-<div class="pagination">
-    {% if articles.has_previous %}
+    {% if articles.has_other_pages %}
+    <div class="pagination">
+        {% if articles.has_previous %}
     <a href="?page={{ articles.previous_page_number }}{% if current_topic %}&topic={{ current_topic }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="pagination-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
         Previous
     </a>
-    {% endif %}
+        {% endif %}
 
-    <span class="current-page">
-        Page {{ articles.number }} of {{ articles.paginator.num_pages }}
-    </span>
+        <span class="current-page">
+            Page {{ articles.number }} of {{ articles.paginator.num_pages }}
+        </span>
 
-    {% if articles.has_next %}
+        {% if articles.has_next %}
     <a href="?page={{ articles.next_page_number }}{% if current_topic %}&topic={{ current_topic }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="pagination-btn">
         Next
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
