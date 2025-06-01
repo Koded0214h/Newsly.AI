@@ -53,7 +53,13 @@ def fetch_news_articles():
     else:
         logger.info(f"Using NewsAPI key: {settings.NEWS_API_KEY[:5]}...")  # Only log first 5 chars for security
     
-    url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={settings.NEWS_API_KEY}'
+    # Ensure we're using the environment variable
+    api_key = settings.NEWS_API_KEY
+    if not api_key:
+        logger.error("NEWS_API_KEY not found in settings!")
+        return []
+    
+    url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={api_key}'
     try:
         response = requests.get(url)
         response.raise_for_status()
