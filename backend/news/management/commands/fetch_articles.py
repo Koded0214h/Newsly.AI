@@ -128,11 +128,11 @@ def get_full_article_content(url):
                     content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
             
             # ABC News specific
-            elif 'abcnews.go.com' in url:
-                content_div = soup.find('div', {'class': 'article-copy'})
-                if content_div:
-        paragraphs = content_div.find_all('p')
-                    content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
+        elif 'abcnews.go.com' in url:
+            content_div = soup.find('div', {'class': 'article-copy'})
+            if content_div:
+                paragraphs = content_div.find_all('p')
+                content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
         
         # Strategy 3: Fallback to body if no specific container found
         if not content or len(content) < 100:
