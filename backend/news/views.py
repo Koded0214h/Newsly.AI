@@ -38,7 +38,7 @@ def register1(request):
             cleaned_data.pop('password2', None)
             request.session['registration_data'] = cleaned_data
             print("Session data set:", request.session.get('registration_data'))
-            return redirect('register1')
+            return redirect('register2')
         else:
             print("Form errors:", form.errors)
             for field, errors in form.errors.items():
@@ -52,20 +52,15 @@ def register1(request):
 
 def register2(request):
     # Check if user has completed first step
-    if not all(key in request.session for key in ['email', 'first_name', 'last_name', 'password1']):
+    registration_data = request.session.get('registration_data')
+    if not registration_data:
         return redirect('register1')
     
     if request.method == 'POST':
         form = RegisterForm_News(request.POST)
         if form.is_valid():
             # Get personal data from session
-            personal_data = {
-                'email': request.session['email'],
-                'first_name': request.session['first_name'],
-                'last_name': request.session['last_name'],
-                'password1': request.session['password1']
-            }
-            print("Personal data from session:", personal_data)
+            personal_data = registration_data
             
             # Create user with personal data
             user = CustomUser.objects.create_user(
@@ -92,8 +87,7 @@ def register2(request):
             user.save()
             
             # Clear session data
-            for key in ['email', 'first_name', 'last_name', 'password1']:
-                request.session.pop(key, None)
+            request.session.pop('registration_data', None)
             
             # Log the user in
             login(request, user)
