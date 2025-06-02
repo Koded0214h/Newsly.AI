@@ -178,7 +178,7 @@ def store_articles(api_articles):
         futures = []
         for item in api_articles:
             if not all(key in item for key in ['title', 'url']):
-                logger.warning(f"Skipping article with missing fields: {item.get('title', 'Unknown')")
+                logger.warning("Skipping article with missing fields: {item.get('title', 'Unknown')}")
                 continue
                 
             futures.append(executor.submit(process_single_article, item, categories))
