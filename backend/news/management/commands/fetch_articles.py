@@ -308,7 +308,7 @@ def generate_news_content(category):
             if not all(k in article_data for k in ['title', 'content', 'summary']):
                 raise ValueError("Missing required fields in OpenAI response")
                 
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
             url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
             
             with transaction.atomic():
@@ -318,7 +318,7 @@ def generate_news_content(category):
                     summary=article_data['summary'],
                     url=url,
                     category=category,
-                    created_at=datetime.now(),
+                    created_at=timezone.now(),
                     is_ai_generated=True
                 )
                 enrich_article(article)
@@ -353,7 +353,7 @@ class Command(BaseCommand):
                 # Check if we need to generate new articles
                 last_article = Article.objects.filter(category=category).order_by('-created_at').first()
                 
-                if not last_article or (datetime.now() - last_article.created_at) > timedelta(hours=24):
+                if not last_article or (timezone.now() - last_article.created_at) > timedelta(hours=24):
                     # Generate new article
                     article = self.generate_news_content(category)
                     if article:
@@ -415,7 +415,7 @@ class Command(BaseCommand):
                     raise ValueError(f"Missing required fields in response. Got: {list(article_data.keys())}")
                 
                 # Create a unique URL (using timestamp and category)
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
                 url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
                 
                 # Create the article
@@ -425,7 +425,7 @@ class Command(BaseCommand):
                     summary=article_data['summary'],
                     url=url,
                     category=category,
-                    created_at=datetime.now()
+                    created_at=timezone.now()
                 )
                 
                 return article
