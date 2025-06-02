@@ -3,10 +3,8 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import openai
 import logging
-import time
 from newspaper import Article
 from django.core.management.base import BaseCommand
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +19,19 @@ def fetch_news_articles(sources):
     articles = []
     for source in sources:
         try:
-            response = session.get(source)
+            response = session.get(source, verify=False)  # Disable SSL verification to prevent SSL errors (use with caution)
             response.raise_for_status()
-            soup = BeautifulSoup(response.content, "html.parser")
+            # Parse as XML because RSS is XML
+            soup = BeautifulSoup(response.content, "xml")
             for item in soup.find_all("item"):
                 title = item.find("title").text if item.find("title") else ""
                 link = item.find("link").text if item.find("link") else ""
                 pub_date = item.find("pubDate").text if item.find("pubDate") else ""
                 description = item.find("description").text if item.find("description") else ""
+                # Skip articles with invalid or missing links
+                if not link or not link.startswith("http"):
+                    logger.warning(f"Skipping article with invalid link: {link}")
+                    continue
                 articles.append({
                     "title": title,
                     "link": link,
@@ -40,6 +43,9 @@ def fetch_news_articles(sources):
     return articles
 
 def get_full_article_content(url):
+    if not url or not url.startswith("http"):
+        logger.warning(f"Skipping invalid URL for content fetch: {url}")
+        return ""
     try:
         article = Article(url)
         article.download()
@@ -91,11 +97,10 @@ def process_single_article(article):
     return enrich_article(article)
 
 def store_articles(articles, max_workers=5):
-    results = []
     seen_links = set()
-    articles = [a for a in articles if a["link"] not in seen_links and not seen_links.add(a["link"])]
+    filtered_articles = [a for a in articles if a["link"] not in seen_links and not seen_links.add(a["link"])]
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(executor.map(process_single_article, articles))
+        results = list(executor.map(process_single_article, filtered_articles))
     return results
 
 def generate_news_content(categories):
@@ -114,12 +119,10 @@ def generate_news_content(categories):
         logger.error(f"Error generating news content: {e}")
         return ""
 
-
 class Command(BaseCommand):
     help = 'Fetches, processes, and stores news articles from sources'
 
     def handle(self, *args, **options):
-        # Example usage
         sources = [
             "https://rss.cnn.com/rss/edition.rss",
             "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
