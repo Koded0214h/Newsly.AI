@@ -109,7 +109,7 @@ def generate_news_content(categories):
         )
         return response.choices[0].message['content'].strip()
     except Exception as e:
-        logger.error(f"Error generating news content: {e}")g
+        logger.error(f"Error generating news content: {e}")
         return ""
 
 
