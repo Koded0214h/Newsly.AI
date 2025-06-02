@@ -17,15 +17,17 @@ import html
 from django.conf import settings
 from datetime import datetime, timedelta
 import openai
+import json
+from circuitbreaker import circuit
+import psutil
+from django.db import transaction
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
-# Download required NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
-
+# Configure logging
 logger = logging.getLogger(__name__)
 
+# Topic keywords mapping remains the same
 TOPIC_KEYWORDS = {
     "Business": {"business", "economy", "market", "stock", "trade", "finance", "bank", "investment", "company", "corporate", "dollar", "profit", "revenue", "shares", "stock market", "wall street"},
     "Politics": {"politics", "government", "election", "president", "congress", "senate", "democrat", "republican", "policy", "vote", "campaign", "legislation", "bill", "law", "administration", "minister", "parliament"},
@@ -36,6 +38,14 @@ TOPIC_KEYWORDS = {
     "Sports": {"sports", "game", "match", "tournament", "league", "player", "team", "score", "goal", "win", "lose", "coach", "athlete", "olympics", "football", "soccer", "basketball", "baseball", "tennis", "cricket"},
     "Technology": {"technology", "tech", "computer", "software", "hardware", "internet", "ai", "artificial intelligence", "robot", "robotics", "startup", "app", "application", "gadget", "device", "smartphone", "mobile", "web", "cloud", "data", "cyber", "security"},
 }
+
+def check_system_resources():
+    """Check if system has enough resources to proceed"""
+    mem = psutil.virtual_memory()
+    if mem.percent > 90:
+        logger.warning("High memory usage detected (%d%%)", mem.percent)
+        return False
+    return True
 
 def get_topic_for_text(text, topics):
     text = text.lower()
@@ -48,32 +58,37 @@ def get_topic_for_text(text, topics):
             best_topic = topics[topic_name.lower()]
     return best_topic
 
+@circuit(failure_threshold=3, recovery_timeout=60)
 def fetch_news_articles():
-    # Log the full API key for debugging (only in development)
+    if not check_system_resources():
+        return []
+        
     if settings.DEBUG:
         logger.info(f"Full NewsAPI key: {settings.NEWS_API_KEY}")
     else:
-        logger.info(f"Using NewsAPI key: {settings.NEWS_API_KEY[:5]}...")  # Only log first 5 chars for security
+        logger.info(f"Using NewsAPI key: {settings.NEWS_API_KEY[:5]}...")
     
-    # Ensure we're using the environment variable
     api_key = settings.NEWS_API_KEY
     if not api_key:
         logger.error("NEWS_API_KEY not found in settings!")
         return []
     
-    url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={api_key}'
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        
-        if data.get('status') != 'ok':
-            logger.error(f"NewsAPI returned error: {data.get('message', 'Unknown error')}")
-            return []
+        with requests.Session() as session:
+            session.timeout = 10
+            url = f'https://newsapi.org/v2/top-headlines?language=en&pageSize=20&apiKey={api_key}'
+            response = session.get(url)
+            response.raise_for_status()
+            data = response.json()
             
-        articles = data.get('articles', [])
-        logger.info(f"Successfully fetched {len(articles)} articles from NewsAPI")
-        return articles
+            if data.get('status') != 'ok':
+                logger.error(f"NewsAPI returned error: {data.get('message', 'Unknown error')}")
+                return []
+                
+            articles = data.get('articles', [])
+            logger.info(f"Successfully fetched {len(articles)} articles from NewsAPI")
+            return articles
+            
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching news: {str(e)}")
         return []
@@ -82,152 +97,123 @@ def fetch_news_articles():
         return []
 
 def get_full_article_content(url):
-    """Fetch the full article content from the article URL, fallback gracefully if blocked."""
+    """Fetch the full article content with improved error handling"""
+    if not check_system_resources():
+        return None
+        
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0'
         }
         
-        # Clean up URL if needed
         url = url.replace('\\u003d', '=').replace('\\/', '/')
         
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        
-        # Parse HTML with BeautifulSoup
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Remove unwanted elements
-        for element in soup.find_all(['script', 'style', 'meta', 'link', 'noscript', 'iframe', 'picture', 'svg', 'nav', 'header', 'footer', 'aside']):
-            element.decompose()
-        
-        # Try different strategies to find the main content
-        content = None
-        
-        # Strategy 1: Look for common article containers
-        article_containers = soup.find_all(['article', 'main', 'div'], class_=lambda x: x and any(term in str(x).lower() for term in ['article', 'content', 'story', 'post', 'entry', 'main']))
-        
-        if article_containers:
-            content_div = article_containers[0]
-            paragraphs = content_div.find_all('p')
-            content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
-        
-        # Strategy 2: Look for specific news site patterns
-        if not content or len(content) < 100:
-            # WSJ specific
-            if 'wsj.com' in url:
-                content_div = soup.find('div', {'class': 'article-content'})
-                if content_div:
-                    paragraphs = content_div.find_all('p')
-                    content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
+        with requests.Session() as session:
+            session.timeout = 15
+            response = session.get(url, headers=headers)
+            response.raise_for_status()
             
-            # ABC News specific
-        elif 'abcnews.go.com' in url:
-            content_div = soup.find('div', {'class': 'article-copy'})
-            if content_div:
-                paragraphs = content_div.find_all('p')
-                content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
-        
-        # Strategy 3: Fallback to body if no specific container found
-        if not content or len(content) < 100:
-            content_div = soup.body or soup
-            paragraphs = content_div.find_all('p')
-            content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
-        
-        # Clean up the content
-        if content:
-            content = re.sub(r'\s+', ' ', content)  # Normalize whitespace
-            content = re.sub(r'\n\s*\n', '\n\n', content)  # Normalize line breaks
-            content = content.strip()
+            soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Remove common unwanted patterns
-            content = re.sub(r'Click here to read more.*$', '', content, flags=re.IGNORECASE)
-            content = re.sub(r'Subscribe to.*$', '', content, flags=re.IGNORECASE)
-            content = re.sub(r'Sign up for.*$', '', content, flags=re.IGNORECASE)
+            # Remove unwanted elements
+            for element in soup.find_all(['script', 'style', 'meta', 'link', 'noscript', 'iframe', 'picture', 'svg', 'nav', 'header', 'footer', 'aside']):
+                element.decompose()
             
-            # If content is still too short, try getting all text
-            if len(content) < 100:
-                content = content_div.get_text(separator='\n', strip=True)
+            # Content extraction strategies
+            content = None
+            strategies = [
+                lambda: soup.find('article'),
+                lambda: soup.find('main'),
+                lambda: soup.find('div', class_=re.compile(r'article|content|story|post|entry|main', re.I)),
+                lambda: soup.body
+            ]
+            
+            for strategy in strategies:
+                if content and len(content) > 100:
+                    break
+                try:
+                    container = strategy()
+                    if container:
+                        paragraphs = container.find_all('p')
+                        content = '\n\n'.join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
+                except Exception:
+                    continue
+            
+            if content:
                 content = re.sub(r'\s+', ' ', content)
-                content = re.sub(r'\n\s*\n', '\n\n', content)
-                content = content.strip()
-        
-        return content if content and len(content) > 100 else None
+                content = re.sub(r'\n\s*\n', '\n\n', content).strip()
+                content = re.sub(r'(Click here to read more|Subscribe to|Sign up for).*$', '', content, flags=re.IGNORECASE)
+                
+                if len(content) < 100:
+                    content = container.get_text(separator='\n', strip=True)
+                    content = re.sub(r'\s+', ' ', content).strip()
+                
+                return content if len(content) > 100 else None
+                
+        return None
         
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            logger.warning(f"Authentication required for {url}")
-        elif e.response.status_code == 403:
-            logger.warning(f"Access forbidden for {url}")
-        elif e.response.status_code == 404:
-            logger.warning(f"Article not found at {url}")
-        else:
-            logger.warning(f"HTTP error for {url}: {str(e)}")
-        return None
+        logger.warning(f"HTTP error for {url}: {e.response.status_code}")
     except requests.exceptions.RequestException as e:
         logger.warning(f"Request error for {url}: {str(e)}")
-        return None
     except Exception as e:
-        logger.warning(f"Could not fetch full content for {url}: {str(e)}")
-        return None
+        logger.warning(f"Error processing {url}: {str(e)}")
+    return None
 
 def store_articles(api_articles):
-    if not api_articles:
-        logger.warning("No articles to store")
+    if not api_articles or not check_system_resources():
+        logger.warning("No articles to store or insufficient resources")
         return
 
     # Get or create categories
     categories = {
-        'business': Category.objects.get_or_create(name="Business")[0],
-        'politics': Category.objects.get_or_create(name="Politics")[0],
-        'entertainment': Category.objects.get_or_create(name="Entertainment")[0],
-        'environment': Category.objects.get_or_create(name="Environment")[0],
-        'health': Category.objects.get_or_create(name="Health")[0],
-        'science': Category.objects.get_or_create(name="Science")[0],
-        'sports': Category.objects.get_or_create(name="Sports")[0],
-        'technology': Category.objects.get_or_create(name="Technology")[0],
-        'general': Category.objects.get_or_create(name="General")[0]
+        name.lower(): Category.objects.get_or_create(name=name)[0]
+        for name in TOPIC_KEYWORDS.keys()
     }
+    categories['general'] = Category.objects.get_or_create(name="General")[0]
 
-    for item in api_articles:
-        # Skip articles without required fields
-        if not all(key in item for key in ['title', 'url']):
-            logger.warning(f"Skipping article with missing required fields: {item.get('title', 'Unknown')}")
-            continue
-
-        # Initialize content from API
-        content = item.get('content', '') or ''
-        description = item.get('description', '') or ''
-
-        # Try to fetch full content if API content is too short
-        if len(content) < 100:
-            full_content = get_full_article_content(item['url'])
-            if full_content and len(full_content) > len(content):
-                content = full_content
-
-        # Fallback to description if content is still too short
-        if len(content) < 100:
-            content = description
-
-        # Skip if no usable content
-        if not content:
-            logger.warning(f"Skipping article with no usable content: {item['title']}")
-            continue
-
-        # Clean up the content
-        content = content.replace('…', '').replace('...', '').strip()
+    # Process articles in parallel with thread pool
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = []
+        for item in api_articles:
+            if not all(key in item for key in ['title', 'url']):
+                logger.warning(f"Skipping article with missing fields: {item.get('title', 'Unknown')")
+                continue
+                
+            futures.append(executor.submit(process_single_article, item, categories))
         
-        # Determine category based on content and title
-        text = (item['title'] + ' ' + content).lower()
-        category = get_topic_for_text(text, categories)
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                if result:
+                    logger.info(f"Processed article: {result}")
+            except Exception as e:
+                logger.error(f"Error processing article: {str(e)}")
 
-        try:
+def process_single_article(item, categories):
+    """Process a single article in a thread-safe manner"""
+    try:
+        with transaction.atomic():
+            content = item.get('content', '') or ''
+            description = item.get('description', '') or ''
+
+            if len(content) < 100:
+                full_content = get_full_article_content(item['url'])
+                if full_content and len(full_content) > len(content):
+                    content = full_content
+
+            if len(content) < 100:
+                content = description
+
+            if not content:
+                logger.warning(f"Skipping article with no content: {item['title']}")
+                return None
+
+            content = content.replace('…', '').replace('...', '').strip()
+            text = (item['title'] + ' ' + content).lower()
+            category = get_topic_for_text(text, categories)
+
             article, created = Article.objects.get_or_create(
                 url=item['url'],
                 defaults={
@@ -241,207 +227,165 @@ def store_articles(api_articles):
 
             if created:
                 enrich_article(article)
-                logger.info(f"✅ Added and enriched: {article.title} (Category: {category.name})")
+                return f"✅ Added: {article.title} (Category: {category.name})"
             else:
-                logger.info(f"⏭ Already exists: {article.title}")
+                return f"⏭ Exists: {article.title}"
 
-        except Exception as e:
-            logger.error(f"Error storing article {item.get('title', 'Unknown')}: {str(e)}")
-
-def recategorize_existing_articles():
-    """Recategorize all existing articles"""
-    logger.info("Starting article recategorization...")
-    articles = Article.objects.all()
-    topics = {
-        'business': Category.objects.get_or_create(name="Business")[0],
-        'politics': Category.objects.get_or_create(name="Politics")[0],
-        'entertainment': Category.objects.get_or_create(name="Entertainment")[0],
-        'environment': Category.objects.get_or_create(name="Environment")[0],
-        'health': Category.objects.get_or_create(name="Health")[0],
-        'science': Category.objects.get_or_create(name="Science")[0],
-        'sports': Category.objects.get_or_create(name="Sports")[0],
-        'technology': Category.objects.get_or_create(name="Technology")[0],
-        'general': Category.objects.get_or_create(name="General")[0]
-    }
-    
-    for article in articles:
-        text = (article.title + ' ' + article.content).lower()
-        article.category = get_topic_for_text(text, topics)
-        article.save()
-        logger.info(f"Recategorized: {article.title} -> {article.category.name}")
-    
-    logger.info("Article recategorization complete!")
-
-def analyze_sentiment(text):
-    """
-    Simple sentiment analysis based on positive and negative word lists
-    """
-    positive_words = {'good', 'great', 'excellent', 'positive', 'success', 'win', 'happy', 'best', 'better', 'improve', 'up', 'rise', 'gain'}
-    negative_words = {'bad', 'poor', 'negative', 'fail', 'loss', 'worst', 'worse', 'down', 'fall', 'decline', 'problem', 'issue', 'concern'}
-    
-    # Convert text to lowercase and split into words
-    words = set(re.findall(r'\b\w+\b', text.lower()))
-    
-    # Count positive and negative words
-    positive_count = len(words.intersection(positive_words))
-    negative_count = len(words.intersection(negative_words))
-    
-    # Calculate sentiment score (-1 to 1)
-    total = positive_count + negative_count
-    if total == 0:
-        return 0.0
-    
-    score = (positive_count - negative_count) / total
-    return round(score, 3)
-
-def get_readability_score(text):
-    try:
-        return round(textstat.flesch_reading_ease(text), 2)  # 0–100 scale
     except Exception as e:
-        logger.error(f"❌ Readability analysis error: {str(e)}")
-        return 50.0  # neutral fallback
-
-def generate_summary(text, target_words=100):
-    """Generate a summary with exactly target_words using LSA (Latent Semantic Analysis)"""
-    try:
-        # Create a parser
-        parser = PlaintextParser.from_string(text, Tokenizer("english"))
-        
-        # Create stemmer
-        stemmer = Stemmer("english")
-        
-        # Create summarizer
-        summarizer = LsaSummarizer(stemmer)
-        summarizer.stop_words = get_stop_words("english")
-        
-        # Start with a reasonable number of sentences
-        sentences_count = 5
-        summary = summarizer(parser.document, sentences_count)
-        summary_text = " ".join([str(sentence) for sentence in summary])
-        
-        # Count words in the summary
-        word_count = len(summary_text.split())
-        
-        # Adjust number of sentences until we get close to target_words
-        while word_count < target_words and sentences_count < len(parser.document.sentences):
-            sentences_count += 1
-            summary = summarizer(parser.document, sentences_count)
-            summary_text = " ".join([str(sentence) for sentence in summary])
-            word_count = len(summary_text.split())
-        
-        # If we have too many words, trim to exactly target_words
-        if word_count > target_words:
-            words = summary_text.split()
-            summary_text = " ".join(words[:target_words])
-        
-        return summary_text
-    except Exception as e:
-        logger.error(f"Summarization error: {str(e)}")
-        return text[:200] + "..."  # Fallback to first 200 characters
+        logger.error(f"Error storing article {item.get('title', 'Unknown')}: {str(e)}")
+        return None
 
 def enrich_article(article):
-    text = article.content or article.summary or ""
-    article.sentiment = analyze_sentiment(text)
-    article.reading_difficulty = get_readability_score(text)
+    """Enrich article with additional metadata"""
+    try:
+        text = article.content or article.summary or ""
+        article.sentiment = analyze_sentiment(text)
+        article.reading_difficulty = get_readability_score(text)
 
-    # Generate summary if none or too short (< 50 chars)
-    if not article.summary or len(article.summary) < 50:
-        try:
-            # Clean and prepare text for summarization
+        if not article.summary or len(article.summary) < 50:
             text = text.replace('\n', ' ').strip()
-            # Remove extra spaces
             text = ' '.join(text.split())
             
-            # Generate summary
-            article.summary = generate_summary(text)
-            logger.info(f"Generated summary for: {article.title}")
-        except Exception as e:
-            logger.error(f"Summarization failed for {article.title}: {str(e)}")
-            # Fallback to description if summarization fails
-            if not article.summary:
-                article.summary = article.content[:200] + '...'
+            try:
+                article.summary = generate_summary(text)
+                logger.info(f"Generated summary for: {article.title}")
+            except Exception as e:
+                logger.error(f"Summarization failed for {article.title}: {str(e)}")
+                if not article.summary:
+                    article.summary = article.content[:200] + '...'
 
-    article.save()
-    logger.info(f"✨ Enriched: {article.title}")
+        article.save()
+        logger.info(f"✨ Enriched: {article.title}")
+    except Exception as e:
+        logger.error(f"Error enriching article {article.title}: {str(e)}")
 
-class Command(BaseCommand):
-    help = 'Fetches news articles using OpenAI'
+@circuit(failure_threshold=2, recovery_timeout=120)
+def generate_news_content(category):
+    """Generate news content with circuit breaker and proper error handling"""
+    if not check_system_resources():
+        logger.warning("Skipping generation due to resource constraints")
+        return None
 
-    def handle(self, *args, **kwargs):
+    try:
+        client = openai.OpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            timeout=30.0  # Overall timeout
+        )
+        
+        prompt = f"""Generate a realistic news article about {category.name}. 
+        The article should be informative, engaging, and current.
+        Include:
+        1. A catchy headline
+        2. A detailed article body (at least 500 words)
+        3. A brief summary (2-3 sentences)
+        
+        Format the response as JSON with these fields:
+        {{
+            "title": "article headline",
+            "content": "full article content",
+            "summary": "brief summary"
+        }}
+        """
+        
+        start_time = time.time()
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",  # Using faster model
+            messages=[
+                {"role": "system", "content": "You are a professional news writer."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1500,
+            timeout=20.0  # Request timeout
+        )
+        
+        logger.info(f"OpenAI API call took {time.time() - start_time:.2f} seconds")
+        
         try:
-            # Get all categories
-            categories = Category.objects.all()
-            
-            # Generate articles for each category
-            for category in categories:
-                # Check if we need to generate new articles
-                last_article = Article.objects.filter(category=category).order_by('-created_at').first()
-                
-                if not last_article or (datetime.now() - last_article.created_at) > timedelta(hours=24):
-                    # Generate new article
-                    article = self.generate_news_content(category)
-                    if article:
-                        self.stdout.write(self.style.SUCCESS(f'Generated new article for {category.name}: {article.title}'))
-                    else:
-                        self.stdout.write(self.style.WARNING(f'Failed to generate article for {category.name}'))
-                        
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error in fetch_articles: {str(e)}'))
-
-    def generate_news_content(self, category):
-        """Generate news content for a given category using OpenAI."""
-        try:
-            # Set up OpenAI client
-            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-            
-            # Create a prompt for the category
-            prompt = f"""Generate a realistic news article about {category.name}. 
-            The article should be informative, engaging, and current.
-            Include:
-            1. A catchy headline
-            2. A detailed article body (at least 500 words)
-            3. A brief summary (2-3 sentences)
-            
-            Format the response as JSON with these fields:
-            {{
-                "title": "article headline",
-                "content": "full article content",
-                "summary": "brief summary"
-            }}
-            """
-            
-            # Generate content using OpenAI
-            response = client.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=[
-                    {"role": "system", "content": "You are a professional news writer. Write realistic, engaging news articles."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
-            
-            # Parse the response
             content = response.choices[0].message.content
-            import json
-            article_data = json.loads(content)
+            article_data = json.loads(content.strip())
             
-            # Create a unique URL (using timestamp and category)
+            if not all(k in article_data for k in ['title', 'content', 'summary']):
+                raise ValueError("Missing required fields in OpenAI response")
+                
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
             
-            # Create the article
-            article = Article.objects.create(
-                title=article_data['title'],
-                content=article_data['content'],
-                summary=article_data['summary'],
-                url=url,
-                category=category,
-                created_at=datetime.now()
-            )
+            with transaction.atomic():
+                article = Article.objects.create(
+                    title=article_data['title'],
+                    content=article_data['content'],
+                    summary=article_data['summary'],
+                    url=url,
+                    category=category,
+                    created_at=datetime.now(),
+                    is_ai_generated=True
+                )
+                enrich_article(article)
+                return article
+                
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON response from OpenAI")
+        except ValueError as e:
+            logger.error(f"Invalid response format: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error processing OpenAI response: {str(e)}")
             
-            return article
+    except openai.APITimeoutError:
+        logger.error("OpenAI API timeout")
+    except openai.APIError as e:
+        logger.error(f"OpenAI API error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error in generate_news_content: {str(e)}")
+        
+    return None
+
+class Command(BaseCommand):
+    help = 'Fetches and generates news articles'
+
+    def handle(self, *args, **kwargs):
+        try:
+            if not check_system_resources():
+                logger.error("Insufficient system resources to proceed")
+                return
+
+            # Fetch real news articles
+            api_articles = fetch_news_articles()
+            if api_articles:
+                store_articles(api_articles)
+
+            # Generate AI content for stale categories
+            categories = Category.objects.all()
+            for category in categories:
+                if self.should_generate_for_category(category):
+                    article = generate_news_content(category)
+                    if article:
+                        self.stdout.write(self.style.SUCCESS(f'Generated: {article.title}'))
+                    else:
+                        self.stdout.write(self.style.WARNING(f'Failed to generate for {category.name}'))
+                        
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error: {str(e)}'))
+            logger.exception("Command failed")
+
+    def should_generate_for_category(self, category):
+        """Check if we should generate content for this category"""
+        try:
+            last_article = Article.objects.filter(
+                category=category,
+                created_at__gte=datetime.now() - timedelta(hours=24)
+            ).order_by('-created_at').first()
+            
+            if not last_article:
+                return True
+                
+            # Don't generate if we already have recent AI content
+            if last_article.is_ai_generated:
+                return False
+                
+            # Only generate if the last article is older than 24 hours
+            return (datetime.now() - last_article.created_at) > timedelta(hours=24)
             
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error generating news content: {str(e)}'))
-            return None 
+            logger.error(f"Error checking category {category.name}: {str(e)}")
+            return False
