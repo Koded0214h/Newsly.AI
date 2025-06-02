@@ -5,6 +5,8 @@ import openai
 import logging
 import time
 from newspaper import Article
+from django.core.management.base import BaseCommand
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,3 +115,17 @@ def generate_news_content(categories):
         return ""
 
 
+class Command(BaseCommand):
+    help = 'Fetches, processes, and stores news articles from sources'
+
+    def handle(self, *args, **options):
+        # Example usage
+        sources = [
+            "https://rss.cnn.com/rss/edition.rss",
+            "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+        ]
+        articles = fetch_news_articles(sources)
+        enriched_articles = store_articles(articles)
+
+        for article in enriched_articles:
+            self.stdout.write(self.style.SUCCESS(f"Fetched: {article['title']}"))
