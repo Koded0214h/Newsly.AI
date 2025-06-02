@@ -402,46 +402,64 @@ class Command(BaseCommand):
             2. A detailed article body (at least 500 words)
             3. A brief summary (2-3 sentences)
             
-            Format the response as JSON with these fields:
+            You must respond with a valid JSON object in this exact format:
             {{
                 "title": "article headline",
                 "content": "full article content",
                 "summary": "brief summary"
             }}
+            
+            Do not include any text before or after the JSON object. The response must be a valid JSON object that can be parsed directly.
             """
             
             # Generate content using OpenAI
             response = client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
-                    {"role": "system", "content": "You are a professional news writer. Write realistic, engaging news articles."},
+                    {"role": "system", "content": "You are a professional news writer. Write realistic, engaging news articles. Always respond with valid JSON only."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2000
+                max_tokens=2000,
+                response_format={ "type": "json_object" }
             )
             
             # Parse the response
-            content = response.choices[0].message.content
-            import json
-            article_data = json.loads(content)
+            content = response.choices[0].message.content.strip()
             
-            # Create a unique URL (using timestamp and category)
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
+            # Log the raw response for debugging
+            self.stdout.write(f"Raw response: {content}")
             
-            # Create the article
-            article = Article.objects.create(
-                title=article_data['title'],
-                content=article_data['content'],
-                summary=article_data['summary'],
-                url=url,
-                category=category,
-                created_at=datetime.now()
-            )
-            
-            return article
-            
+            try:
+                import json
+                article_data = json.loads(content)
+                
+                # Validate required fields
+                required_fields = ['title', 'content', 'summary']
+                if not all(field in article_data for field in required_fields):
+                    raise ValueError(f"Missing required fields in response. Got: {list(article_data.keys())}")
+                
+                # Create a unique URL (using timestamp and category)
+                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
+                
+                # Create the article
+                article = Article.objects.create(
+                    title=article_data['title'],
+                    content=article_data['content'],
+                    summary=article_data['summary'],
+                    url=url,
+                    category=category,
+                    created_at=datetime.now()
+                )
+                
+                return article
+                
+            except json.JSONDecodeError as e:
+                self.stdout.write(self.style.ERROR(f'Invalid JSON response: {str(e)}'))
+                self.stdout.write(self.style.ERROR(f'Raw content: {content}'))
+                return None
+                
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error generating news content: {str(e)}'))
             return None 
