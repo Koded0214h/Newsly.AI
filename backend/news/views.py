@@ -152,48 +152,48 @@ def user_logout(request):
 @login_required
 def home(request):
     # Get filter parameters
-    topic = request.GET.get('topic', '')
+    selected_category = request.GET.get('category', '').lower()
     search_query = request.GET.get('search', '')
     page = request.GET.get('page', 1)
     
-    # Get all articles
-    articles = Article.objects.all().order_by('-created_at')
-    print(f"Total articles before filtering: {articles.count()}")
+    # Get all categories for filter
+    categories = Category.objects.all()
     
-    # Apply filters
-    if topic:
-        articles = articles.filter(category__name=topic)
+    # Base query for articles
+    articles = Article.objects.all().order_by('-created_at')
+    
+    # Apply category filter
+    if selected_category:
+        articles = articles.filter(category__name__iexact=selected_category)
+    
+    # Apply search filter
     if search_query:
         articles = articles.filter(
             Q(title__icontains=search_query) |
-            Q(content__icontains=search_query)
+            Q(content__icontains=search_query) |
+            Q(summary__icontains=search_query)
         )
     
     # Pagination
     paginator = Paginator(articles, 12)  # Show 12 articles per page
     articles_page = paginator.get_page(page)
-    print(f"Articles in current page: {len(articles_page)}")
     
-    # Get all categories for filter
-    categories = Category.objects.all()
-    print(f"Available categories: {[cat.name for cat in categories]}")
-    
-    # Convert articles_page to list to allow attribute assignment
-    articles_list = list(articles_page)
+    # Get user's interests for personalization
+    user_interests = request.user.interests.all()
     
     # Analyze sentiment and reading level for each article
     from .services import analyze_sentiment, analyze_reading_level
-    for article in articles_list:
+    for article in articles_page:
         article.sentiment_score = analyze_sentiment(article.content) or 0
         article.reading_level = analyze_reading_level(article.content) or 0
     
     context = {
-        'articles': articles_list,
+        'articles': articles_page,
         'categories': categories,
-        'current_topic': topic,
+        'selected_category': selected_category,
         'search_query': search_query,
         'page_obj': articles_page,
-        'user_interests': request.user.interests.all(),
+        'user_interests': user_interests,
     }
     return render(request, 'home.html', context)
 
