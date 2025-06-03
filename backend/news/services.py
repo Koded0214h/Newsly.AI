@@ -121,8 +121,16 @@ def generate_news_content(category):
         # Set up OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
-        # Validate category name
-        category_name = category.name if category.name else "general"
+        # Defensive check for category and category name
+        if category is None:
+            print("Warning: category is None, using 'general' as category name.")
+            category_name = "general"
+        else:
+            try:
+                category_name = category.name if category.name else "general"
+            except Exception as e:
+                print(f"Error accessing category.name: {str(e)}")
+                category_name = "general"
         print(f"Generating article for category: '{category_name}'")
 
         # Create a prompt for the category
