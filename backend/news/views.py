@@ -164,12 +164,6 @@ def home(request):
     # Get user's interests for personalization
     user_interests = request.user.interests.all()
     
-    # Analyze sentiment and reading level for each article
-    from .services import analyze_sentiment, analyze_reading_level
-    for article in articles_page:
-        article.sentiment_score = analyze_sentiment(article.content) or 0
-        article.reading_level = analyze_reading_level(article.content) or 0
-    
     context = {
         'articles': articles_page,
         'categories': categories,
@@ -183,15 +177,11 @@ def home(request):
 def article_detail(request, article_id):
     article = get_object_or_404(Article, id=article_id)
     
-    from .services import analyze_sentiment, analyze_reading_level
-    sentiment_score = analyze_sentiment(article.content) or 0
-    reading_level = analyze_reading_level(article.content) or 0
-    
     return render(request, 'article_detail.html', {
         'article': article,
         'generated_summary': '',
-        'sentiment_score': sentiment_score,
-        'reading_level': reading_level,
+        'sentiment_score': 0,
+        'reading_level': 0,
     })
 
 @require_http_methods(["POST"])
