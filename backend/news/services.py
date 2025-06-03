@@ -112,11 +112,21 @@ def generate_news_content(category):
             print("Error: OPENAI_API_KEY is not set in environment variables.")
             return None
 
+        # Log masked API key presence
+        if settings.OPENAI_API_KEY:
+            print("OPENAI_API_KEY is set.")
+        else:
+            print("OPENAI_API_KEY is empty or None.")
+
         # Set up OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
+        # Validate category name
+        category_name = category.name if category.name else "general"
+        print(f"Generating article for category: '{category_name}'")
+
         # Create a prompt for the category
-        prompt = f"""Generate a realistic news article about {category.name}. 
+        prompt = f"""Generate a realistic news article about {category_name}. 
         The article should be informative, engaging, and current.
         Include:
         1. A catchy headline
@@ -149,7 +159,7 @@ def generate_news_content(category):
         
         # Create a unique URL (using timestamp with microseconds and category)
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
-        url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
+        url = f"https://newsly.ai/articles/{category_name.lower()}/{timestamp}"
         
         # Check if article with this URL already exists
         if Article.objects.filter(url=url).exists():
