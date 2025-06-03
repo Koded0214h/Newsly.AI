@@ -163,7 +163,16 @@ def generate_news_content(category):
         # Parse the response
         content = response.choices[0].message.content
         import json
-        article_data = json.loads(content)
+        try:
+            article_data = json.loads(content)
+        except Exception as e:
+            print(f"Error parsing article JSON: {str(e)}")
+            return None
+        
+        # Validate article_data fields
+        if not all(k in article_data for k in ('title', 'content', 'summary')):
+            print(f"Error: article_data missing required fields: {article_data}")
+            return None
         
         # Create a unique URL (using timestamp with microseconds and category)
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
@@ -182,16 +191,19 @@ def generate_news_content(category):
             return None
         
         # Create the article
-        article = Article.objects.create(
-            title=article_data['title'],
-            content=article_data['content'],
-            summary=article_data['summary'],
-            url=url,
-            category=category,
-            created_at=datetime.now()
-        )
-        
-        return article
+        try:
+            article = Article.objects.create(
+                title=article_data['title'],
+                content=article_data['content'],
+                summary=article_data['summary'],
+                url=url,
+                category=category,
+                created_at=datetime.now()
+            )
+            return article
+        except Exception as e:
+            print(f"Error creating article in DB: {str(e)}")
+            return None
         
     except Exception as e:
         print(f"Error generating news content: {str(e)}")
@@ -212,55 +224,9 @@ def fetch_articles():
                 # Generate new article
                 article = generate_news_content(category)
                 if article:
-                    print(f"Generated new article for {category.name}: {article.title}")
+                    print(f"Successfully created article for category {category.name}")
                 else:
-                    print(f"Failed to generate article for {category.name}")
+                    print(f"Error generating article for category {category.name}")
                     
     except Exception as e:
         print(f"Error in fetch_articles: {str(e)}")
-
-def analyze_sentiment(text):
-    """Analyze the sentiment of text using OpenAI."""
-    try:
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "Analyze the sentiment of the following text and return a score from -1 (very negative) to 1 (very positive)."},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.3,
-            max_tokens=10
-        )
-        
-        # Parse the response to get a float between -1 and 1
-        score = float(response.choices[0].message.content.strip())
-        return max(min(score, 1), -1)  # Ensure score is between -1 and 1
-        
-    except Exception as e:
-        print(f"Error analyzing sentiment: {str(e)}")
-        return 0
-
-def analyze_reading_level(text):
-    """Analyze the reading level of text using OpenAI."""
-    try:
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "Analyze the reading level of the following text and return a score from 1 (elementary) to 10 (advanced)."},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.3,
-            max_tokens=10
-        )
-        
-        # Parse the response to get a float between 1 and 10
-        score = float(response.choices[0].message.content.strip())
-        return max(min(score, 10), 1)  # Ensure score is between 1 and 10
-        
-    except Exception as e:
-        print(f"Error analyzing reading level: {str(e)}")
-        return 5  # Return middle value as default 
