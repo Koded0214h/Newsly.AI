@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from .models import NewsArticle, UserPreferences
+from news.models import NewsArticle, UserPreferences
 
 def send_welcome_email(user):
     subject = 'Welcome to Newsly.AI!'
