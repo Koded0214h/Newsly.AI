@@ -99,12 +99,6 @@ def register2(request):
             except Exception as e:
                 print(f"Error sending welcome email: {str(e)}")
             
-            # Fetch initial articles
-            try:
-                call_command('fetch_articles')
-            except Exception as e:
-                print(f"Error running fetch_articles command: {str(e)}")
-            
             return redirect('home')
         else:
             print("Form errors in register2:", form.errors)
@@ -122,28 +116,17 @@ def register2(request):
 from django.core.management import call_command
 
 def user_login(request):
-    if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
-                login(request, user)
-                try:
-                    call_command('fetch_articles')
-                except Exception as e:
-                    print(f"Error running fetch_articles command: {str(e)}")
-                return redirect('home')
-            else:
-                messages.error(request, 'Invalid username or password')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            # Remove the immediate fetch_articles call
+            return redirect('home')
         else:
-            messages.error(request, "Invalid form")
-    else:
-        form  = AuthenticationForm()
-        
-    return render(request, 'login.html', {'loginform':form})
+            messages.error(request, 'Invalid username or password.')
+    return render(request, 'login.html')
 
 def user_logout(request):
     logout(request)

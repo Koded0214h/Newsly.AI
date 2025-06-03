@@ -7,87 +7,114 @@ from textblob import TextBlob
 import re
 import os
 from datetime import datetime, timedelta
+import nltk
+from nltk.tokenize import sent_tokenize
+import json
 
-def get_user_feed(user):
+def get_user_feed(user, toggle='breaking'):
     """
     Get personalized feed for a user based on their interests and preferences.
     """
-    # Get user's interests
-    interests = user.interests.all()
-    
-    # Get articles that match user's interests
-    articles = Article.objects.filter(
-        Q(category__in=interests) | Q(category__isnull=True)
-    ).order_by('-created_at')
-    
-    return articles
+    try:
+        # Get user's interests
+        interests = user.interests.all()
+        
+        # Get articles that match user's interests
+        articles = Article.objects.filter(
+            Q(category__in=interests) | Q(category__isnull=True)
+        ).order_by('-created_at')
+        
+        return articles
+    except Exception as e:
+        print(f"Error in get_user_feed: {str(e)}")
+        return []
 
-def generate_summary(text, max_length=150):
-    """
-    Generate a summary of the given text using OpenAI's API.
-    """
+def generate_summary(text, max_words=200):
     try:
         # Initialize OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
-        # Generate summary
+        # Create prompt for summary generation
+        prompt = f"""Generate a concise summary of the following text in {max_words} words or less.
+        Text: {text}
+        Return only the summary text."""
+        
+        # Get summary from OpenAI
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo-preview",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes news articles."},
-                {"role": "user", "content": f"Please summarize this article in {max_length} characters or less: {text}"}
+                {"role": "system", "content": "You are a summarization expert. Provide clear and concise summaries."},
+                {"role": "user", "content": prompt}
             ],
-            max_tokens=100,
-            temperature=0.7
+            temperature=0.3,
+            max_tokens=300
         )
         
-        # Extract and return the summary
+        # Get the summary
         summary = response.choices[0].message.content.strip()
-        return summary[:max_length]
+        return summary
+        
     except Exception as e:
         print(f"Error generating summary: {str(e)}")
-        return text[:max_length] + "..." if len(text) > max_length else text 
+        return ""
 
 def analyze_sentiment(text):
-    """
-    Analyze the sentiment of a text using TextBlob.
-    Returns a score between -1 (negative) and 1 (positive).
-    """
     try:
-        analysis = TextBlob(text)
-        return analysis.sentiment.polarity
+        # Initialize OpenAI client
+        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        # Create prompt for sentiment analysis
+        prompt = f"""Analyze the sentiment of the following text and return a score between -1 (very negative) and 1 (very positive).
+        Text: {text[:1000]}  # Using first 1000 chars for efficiency
+        Return only the numerical score."""
+        
+        # Get sentiment analysis from OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[
+                {"role": "system", "content": "You are a sentiment analysis expert. Respond with only a number between -1 and 1."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=50
+        )
+        
+        # Parse the response
+        sentiment_score = float(response.choices[0].message.content.strip())
+        return sentiment_score
+        
     except Exception as e:
-        print(f"Error analyzing sentiment: {str(e)}")
+        print(f"Error in sentiment analysis: {str(e)}")
         return 0
 
 def analyze_reading_level(text):
-    """
-    Calculate a simple reading level score based on average word length.
-    Returns a score between 1 (easy) and 5 (difficult).
-    """
     try:
-        # Remove special characters and split into words
-        words = re.findall(r'\b\w+\b', text.lower())
-        if not words:
-            return 1
+        # Initialize OpenAI client
+        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
-        # Calculate average word length
-        avg_word_length = sum(len(word) for word in words) / len(words)
+        # Create prompt for reading level analysis
+        prompt = f"""Analyze the reading level of the following text and return a score between 1 (elementary) and 10 (academic).
+        Text: {text[:1000]}  # Using first 1000 chars for efficiency
+        Return only the numerical score."""
         
-        # Convert to a 1-5 scale
-        if avg_word_length < 4:
-            return 1  # Very easy
-        elif avg_word_length < 5:
-            return 2  # Easy
-        elif avg_word_length < 6:
-            return 3  # Moderate
-        elif avg_word_length < 7:
-            return 4  # Difficult
-        else:
-            return 5  # Very difficult
+        # Get reading level analysis from OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[
+                {"role": "system", "content": "You are a reading level analysis expert. Respond with only a number between 1 and 10."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=50
+        )
+        
+        # Parse the response
+        reading_level = float(response.choices[0].message.content.strip())
+        return reading_level
+        
     except Exception as e:
-        print(f"Error analyzing reading level: {str(e)}")
-        return 3  # Default to moderate 
+        print(f"Error in reading level analysis: {str(e)}")
+        return 5
 
 def generate_news_content(category):
     """Generate news content for a given category using OpenAI."""
