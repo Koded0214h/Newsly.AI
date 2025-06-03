@@ -31,7 +31,7 @@
     <!-- Articles Grid -->
     <div class="row">
         {% for article in articles %}
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card h-100">
                 {% if article.image_url %}
                 <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}">
@@ -39,7 +39,7 @@
                 <div class="card-body">
                     <span class="badge bg-primary mb-2">{{ article.category.name }}</span>
                     <h5 class="card-title">{{ article.title }}</h5>
-                    <p class="card-text">{{ article.summary|truncatewords:30 }}</p>
+                    <p class="card-text">{{ article.summary|striptags|truncatewords:30 }}</p>
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="{% url 'article_detail' article.id %}" class="btn btn-primary">Read More</a>
                         <small class="text-muted">{{ article.created_at|timesince }} ago</small>
