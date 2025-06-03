@@ -59,66 +59,59 @@ def generate_summary(text, max_words=200):
         return ""
 
 def analyze_sentiment(text):
+    """Analyze the sentiment of text using OpenAI."""
     try:
-        # Initialize OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
-        # Create prompt for sentiment analysis
-        prompt = f"""Analyze the sentiment of the following text and return a score between -1 (very negative) and 1 (very positive).
-        Text: {text[:1000]}  # Using first 1000 chars for efficiency
-        Return only the numerical score."""
-        
-        # Get sentiment analysis from OpenAI
         response = client.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=[
-                {"role": "system", "content": "You are a sentiment analysis expert. Respond with only a number between -1 and 1."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "Analyze the sentiment of the following text and return a score from -1 (very negative) to 1 (very positive)."},
+                {"role": "user", "content": text}
             ],
             temperature=0.3,
-            max_tokens=50
+            max_tokens=10
         )
         
-        # Parse the response
-        sentiment_score = float(response.choices[0].message.content.strip())
-        return sentiment_score
+        # Parse the response to get a float between -1 and 1
+        score = float(response.choices[0].message.content.strip())
+        return max(min(score, 1), -1)  # Ensure score is between -1 and 1
         
     except Exception as e:
-        print(f"Error in sentiment analysis: {str(e)}")
+        print(f"Error analyzing sentiment: {str(e)}")
         return 0
 
 def analyze_reading_level(text):
+    """Analyze the reading level of text using OpenAI."""
     try:
-        # Initialize OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
-        # Create prompt for reading level analysis
-        prompt = f"""Analyze the reading level of the following text and return a score between 1 (elementary) and 10 (academic).
-        Text: {text[:1000]}  # Using first 1000 chars for efficiency
-        Return only the numerical score."""
-        
-        # Get reading level analysis from OpenAI
         response = client.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=[
-                {"role": "system", "content": "You are a reading level analysis expert. Respond with only a number between 1 and 10."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "Analyze the reading level of the following text and return a score from 1 (elementary) to 10 (advanced)."},
+                {"role": "user", "content": text}
             ],
             temperature=0.3,
-            max_tokens=50
+            max_tokens=10
         )
         
-        # Parse the response
-        reading_level = float(response.choices[0].message.content.strip())
-        return reading_level
+        # Parse the response to get a float between 1 and 10
+        score = float(response.choices[0].message.content.strip())
+        return max(min(score, 10), 1)  # Ensure score is between 1 and 10
         
     except Exception as e:
-        print(f"Error in reading level analysis: {str(e)}")
+        print(f"Error analyzing reading level: {str(e)}")
         return 5
 
 def generate_news_content(category):
     """Generate news content for a given category using OpenAI."""
     try:
+        # Check if OPENAI_API_KEY is set
+        if not settings.OPENAI_API_KEY:
+            print("Error: OPENAI_API_KEY is not set in environment variables.")
+            return None
+
         # Set up OpenAI client
         client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
@@ -154,9 +147,14 @@ def generate_news_content(category):
         import json
         article_data = json.loads(content)
         
-        # Create a unique URL (using timestamp and category)
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        # Create a unique URL (using timestamp with microseconds and category)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
         url = f"https://newsly.ai/articles/{category.name.lower()}/{timestamp}"
+        
+        # Check if article with this URL already exists
+        if Article.objects.filter(url=url).exists():
+            print(f"Article with URL {url} already exists. Skipping creation.")
+            return None
         
         # Create the article
         article = Article.objects.create(
