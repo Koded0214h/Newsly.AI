@@ -27,12 +27,12 @@ def fetch_articles():
     try:
         # Define news source URLs for scraping
         news_sources = [
-            'https://www.bbc.com/news',
-            'https://www.cnn.com',
-            'https://www.reuters.com',
-            'https://www.nytimes.com',
-            'https://www.theguardian.com/international',
-            # Add more sources as needed
+            'http://feeds.bbci.co.uk/news/rss.xml',
+            'http://rss.cnn.com/rss/edition.rss',
+            'http://feeds.reuters.com/reuters/topNews',
+            'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
+            'https://www.theguardian.com/world/rss',
+            # Add more valid RSS feeds as needed
         ]
         
         for source_url in news_sources:
