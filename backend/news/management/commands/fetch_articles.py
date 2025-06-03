@@ -5,6 +5,11 @@ import openai
 import logging
 from newspaper import Article
 from django.core.management.base import BaseCommand
+from news.models import Article, Category
+from django.conf import settings
+import time
+from datetime import datetime, timedelta
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -120,15 +125,99 @@ def generate_news_content(categories):
         return ""
 
 class Command(BaseCommand):
-    help = 'Fetches, processes, and stores news articles from sources'
+    help = 'Fetch news articles using OpenAI'
 
-    def handle(self, *args, **options):
-        sources = [
-            "https://rss.cnn.com/rss/edition.rss",
-            "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
-        ]
-        articles = fetch_news_articles(sources)
-        enriched_articles = store_articles(articles)
+    def handle(self, *args, **kwargs):
+        try:
+            # Get all categories
+            categories = Category.objects.all()
+            
+            # Set up OpenAI client with timeout
+            client = openai.OpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                timeout=30.0  # Set a 30-second timeout
+            )
+            
+            for category in categories:
+                try:
+                    # Check if we already have recent articles for this category
+                    recent_articles = Article.objects.filter(
+                        category=category,
+                        created_at__gte=datetime.now() - timedelta(hours=24)
+                    ).count()
+                    
+                    if recent_articles >= 5:  # Skip if we already have enough recent articles
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'Category {category.name} already has recent articles'
+                            )
+                        )
+                        continue
+                    
+                    # Generate article content
+                    article = self.generate_news_content(category, client)
+                    if article:
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f'Successfully created article for category {category.name}'
+                            )
+                        )
+                    
+                    # Add a small delay between API calls to avoid rate limits
+                    time.sleep(2)
+                    
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f'Error processing category {category.name}: {str(e)}'
+                        )
+                    )
+                    continue
+                    
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'Error in fetch_articles command: {str(e)}')
+            )
 
-        for article in enriched_articles:
-            self.stdout.write(self.style.SUCCESS(f"Fetched: {article['title']}"))
+    def generate_news_content(self, category, client):
+        try:
+            # Create a prompt for article generation
+            prompt = f"""Generate a news article about {category.name}. 
+            The article should be informative, engaging, and well-structured.
+            Include a title, content, and a brief summary.
+            Format the response as JSON with the following structure:
+            {{
+                "title": "Article Title",
+                "content": "Article Content",
+                "summary": "Brief Summary"
+            }}"""
+            
+            # Get article content from OpenAI with timeout
+            response = client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=[
+                    {"role": "system", "content": "You are a news article generator."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            # Parse the response and create article
+            article_data = json.loads(response.choices[0].message.content)
+            
+            # Create the article in the database
+            article = Article.objects.create(
+                title=article_data.get('title', ''),
+                content=article_data.get('content', ''),
+                summary=article_data.get('summary', ''),
+                category=category
+            )
+            
+            return article
+            
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'Error generating article: {str(e)}')
+            )
+            return None
