@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Your Daily News Digest</h2>
+    <p>Hello {{ user.username }},</p>
+    <p>Here are today's top stories for you:</p>
+    
+    {% for article in articles %}
+    <div class="article-preview">
+        <h3>{{ article.title }}</h3>
+        <p>{{ article.summary|truncatewords:30 }}</p>
+        <a href="{{ site_url }}{% url 'article_detail' article.id %}">Read More</a>
+    </div>
+    {% endfor %}
+    
+    <p>Stay informed with Newsly.AI!</p>
+</div>
+{% endblock %} 

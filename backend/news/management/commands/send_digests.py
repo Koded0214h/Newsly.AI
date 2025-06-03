@@ -3,15 +3,28 @@ from django.core.mail import get_connection, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
-from news.models import CustomUser, Article
+from news.models import CustomUser, Article, UserPreferences
 from datetime import timedelta
 import logging
 import datetime
+from news.utils.email_utils import send_news_digest
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Sends news digests to users based on their frequency preference'
+    help = 'Sends news digests to users based on their preferences'
+
+    def handle(self, *args, **options):
+        current_time = timezone.now().time()
+        # Get users who want digest at current hour
+        users_to_notify = UserPreferences.objects.filter(
+            digest_enabled=True,
+            digest_time__hour=current_time.hour
+        )
+        
+        if users_to_notify.exists():
+            send_news_digest()
+            self.stdout.write(self.style.SUCCESS('Successfully sent news digests'))
 
     def add_arguments(self, parser):
         parser.add_argument(

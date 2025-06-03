@@ -164,3 +164,6 @@ LOGGING = {
         },
     },
 }
+
+# Add this to your settings.py
+SITE_URL = 'https://newsly-ai.onrender.com'  # Update with your actual domain

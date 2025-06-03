@@ -1,0 +1,13 @@
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --background: #ffffff;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --shadow: rgba(0, 0, 0, 0.05);
+    --hover-bg: #f3f4f6;
+}
+
+/* ... rest of your CSS ... */ 

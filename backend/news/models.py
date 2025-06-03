@@ -109,3 +109,12 @@ class Article(models.Model):
     def __str__(self):
         return self.title
 
+class UserPreferences(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    digest_enabled = models.BooleanField(default=True)
+    digest_time = models.TimeField(default=time(8, 0))  # Default to 8 AM
+    preferred_categories = models.ManyToManyField(Category, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s preferences"
+

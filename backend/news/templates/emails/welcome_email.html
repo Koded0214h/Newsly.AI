@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Welcome to Newsly.AI!</h2>
+    <p>Dear {{ user.username }},</p>
+    <p>Thank you for joining Newsly.AI! We're excited to have you on board.</p>
+    <p>With Newsly.AI, you can:</p>
+    <ul>
+        <li>Get personalized news updates</li>
+        <li>Receive daily news digests</li>
+        <li>Track your favorite topics</li>
+    </ul>
+    <p>Start exploring now!</p>
+    <a href="{{ site_url }}" class="btn btn-primary">Go to Newsly.AI</a>
+</div>
+{% endblock %} 

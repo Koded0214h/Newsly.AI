@@ -24,6 +24,7 @@ import datetime
 from .models import CustomUser, Article, UserPreference, Category
 from .forms import RegisterForm_News, RegisterForm_Personal
 from .services import get_user_feed
+from .utils.email_utils import send_welcome_email
 
 # Create your views here.
 
