@@ -3,6 +3,8 @@ from .models import Article, CustomUser, Category
 from django.db.models import Q
 import openai
 from django.conf import settings
+
+openai.api_key = settings.OPENAI_API_KEY
 from textblob import TextBlob
 import re
 import os
@@ -63,9 +65,7 @@ import re
 def analyze_sentiment(text):
     """Analyze the sentiment of text using OpenAI."""
     try:
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4-turbo-preview",
             messages=[
                 {"role": "system", "content": "Analyze the sentiment of the following text and return a score from -1 (very negative) to 1 (very positive)."},
@@ -92,9 +92,7 @@ def analyze_sentiment(text):
 def analyze_reading_level(text):
     """Analyze the reading level of text using OpenAI."""
     try:
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4-turbo-preview",
             messages=[
                 {"role": "system", "content": "Analyze the reading level of the following text and return a score from 1 (elementary) to 10 (advanced)."},
@@ -133,7 +131,6 @@ def generate_news_content(category):
             print("OPENAI_API_KEY is empty or None.")
 
         # Set up OpenAI client
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         
         # Defensive check for category and category name
         if category is None:
@@ -164,7 +161,7 @@ def generate_news_content(category):
         """
         
         # Generate content using OpenAI
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4-turbo-preview",
             messages=[
                 {"role": "system", "content": "You are a professional news writer. Write realistic, engaging news articles."},
