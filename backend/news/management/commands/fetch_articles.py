@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import openai
+from openai import OpenAI
 import logging
 from newspaper import Article
 from django.core.management.base import BaseCommand
@@ -132,3 +133,27 @@ class Command(BaseCommand):
 
         for article in enriched_articles:
             self.stdout.write(self.style.SUCCESS(f"Fetched: {article['title']}"))
+
+            
+logger = logging.getLogger(__name__)
+
+def generate_summary(article_text):
+    try:
+        client = OpenAI()
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes news articles."},
+                {"role": "user", "content": f"Summarize the following article:\n\n{article_text}"}
+            ],
+            temperature=0.7,
+            max_tokens=200
+        )
+
+        summary = response.choices[0].message.content.strip()
+        return summary
+
+    except Exception as e:
+        logger.error(f"Error generating summary: {e}")
+        return None
