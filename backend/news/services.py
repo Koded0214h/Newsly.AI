@@ -58,6 +58,8 @@ def generate_summary(text, max_words=200):
         print(f"Error generating summary: {str(e)}")
         return ""
 
+import re
+
 def analyze_sentiment(text):
     """Analyze the sentiment of text using OpenAI."""
     try:
@@ -73,9 +75,15 @@ def analyze_sentiment(text):
             max_tokens=10
         )
         
-        # Parse the response to get a float between -1 and 1
-        score = float(response.choices[0].message.content.strip())
-        return max(min(score, 1), -1)  # Ensure score is between -1 and 1
+        # Extract float number from response content using regex
+        content = response.choices[0].message.content.strip()
+        match = re.search(r"[-+]?\d*\.\d+|\d+", content)
+        if match:
+            score = float(match.group())
+            return max(min(score, 1), -1)  # Clamp between -1 and 1
+        else:
+            print(f"Could not parse sentiment score from response: {content}")
+            return 0
         
     except Exception as e:
         print(f"Error analyzing sentiment: {str(e)}")
@@ -96,9 +104,15 @@ def analyze_reading_level(text):
             max_tokens=10
         )
         
-        # Parse the response to get a float between 1 and 10
-        score = float(response.choices[0].message.content.strip())
-        return max(min(score, 10), 1)  # Ensure score is between 1 and 10
+        # Extract float number from response content using regex
+        content = response.choices[0].message.content.strip()
+        match = re.search(r"[-+]?\d*\.\d+|\d+", content)
+        if match:
+            score = float(match.group())
+            return max(min(score, 10), 1)  # Clamp between 1 and 10
+        else:
+            print(f"Could not parse reading level score from response: {content}")
+            return 5
         
     except Exception as e:
         print(f"Error analyzing reading level: {str(e)}")
