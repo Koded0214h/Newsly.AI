@@ -160,6 +160,13 @@ def generate_news_content(category):
         # Create a unique URL (using timestamp with microseconds and category)
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
         url = f"https://newsly.ai/articles/{category_name.lower()}/{timestamp}"
+
+        # Validate URL is not empty or malformed
+        if not url or url == "https://newsly.ai/articles//" or url.isspace():
+            print(f"Error: Generated URL is empty or invalid: '{url}'. Skipping article creation.")
+            return None
+        
+        print(f"Generated article URL: {url}")
         
         # Check if article with this URL already exists
         if Article.objects.filter(url=url).exists():
