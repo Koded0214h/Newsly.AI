@@ -21,7 +21,9 @@
                 </div>
                 
                 {% if article.image_url %}
-                <img src="{{ article.image_url }}" class="img-fluid mb-4" alt="{{ article.title }}">
+                <img src="{{ article.image_url }}" class="img-fluid rounded mb-4" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/images/placeholder.png';">
+                {% else %}
+                <img src="/static/images/placeholder.png" class="img-fluid rounded mb-4" alt="Placeholder image">
                 {% endif %}
                 
                 <div class="article-content">
@@ -31,7 +33,7 @@
                 {% if article.summary %}
                 <div class="article-summary mt-4">
                     <h4>Summary</h4>
-                    <p>{{ article.summary }}</p>
+                    <p>{{ article.summary|striptags }}</p>
                 </div>
                 {% endif %}
 
