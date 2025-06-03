@@ -162,6 +162,7 @@ def generate_news_content(category):
         
         # Parse the response
         content = response.choices[0].message.content
+        print(f"Raw OpenAI response content: {content}")
         import json
         try:
             article_data = json.loads(content)
@@ -169,19 +170,26 @@ def generate_news_content(category):
             print(f"Error parsing article JSON: {str(e)}")
             return None
         
-        # Validate article_data fields
-        if not all(k in article_data for k in ('title', 'content', 'summary')):
+        # Validate article_data fields presence and non-empty
+        required_fields = ('title', 'content', 'summary')
+        if not all(k in article_data for k in required_fields):
             print(f"Error: article_data missing required fields: {article_data}")
             return None
+        for field in required_fields:
+            if not article_data[field] or not article_data[field].strip():
+                print(f"Error: article_data field '{field}' is empty: {article_data}")
+                return None
         
         # Create a unique URL (using timestamp with microseconds and category)
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
         url = f"https://newsly.ai/articles/{category_name.lower()}/{timestamp}"
 
-        # Validate URL is not empty or malformed
+        # Validate URL is not empty or malformed, fallback to UUID
+        import uuid
         if not url or url == "https://newsly.ai/articles//" or url.isspace():
-            print(f"Error: Generated URL is empty or invalid: '{url}'. Skipping article creation.")
-            return None
+            fallback_uuid = uuid.uuid4()
+            url = f"https://newsly.ai/articles/{category_name.lower()}/{fallback_uuid}"
+            print(f"Warning: Generated URL was empty or invalid, using fallback URL: {url}")
         
         print(f"Generated article URL: {url}")
         
