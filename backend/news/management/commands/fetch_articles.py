@@ -10,6 +10,8 @@ from django.conf import settings
 import time
 from datetime import datetime, timedelta
 import json
+from django.utils import timezone
+
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +122,7 @@ class Command(BaseCommand):
                 try:
                     recent_articles = Article.objects.filter(
                         category=category,
-                        created_at__gte=datetime.now() - timedelta(hours=24)
+                        created_at__gte=timezone.now() - timedelta(hours=24)
                     ).count()
 
                     if recent_articles >= 5:
