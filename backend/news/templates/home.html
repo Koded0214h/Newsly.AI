@@ -31,8 +31,8 @@
     <!-- Articles Grid -->
     <div class="row">
         {% for article in articles %}
-        <div class="col-md-3 mb-4">
-            <div class="card h-100 shadow-sm border-0 rounded">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow rounded">
                 {% if article.image_url %}
                 <img src="{{ article.image_url }}" class="card-img-top rounded-top" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/images/placeholder.png';">
                 {% else %}
@@ -41,7 +41,7 @@
                 <div class="card-body d-flex flex-column">
                     <span class="badge bg-primary mb-2">{{ article.category.name }}</span>
                     <h5 class="card-title fw-bold">{{ article.title }}</h5>
-                    <p class="card-text text-truncate" style="flex-grow: 1;">{{ article.summary|striptags|truncatewords:30 }}</p>
+                    <p class="card-text" style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">{{ article.summary|striptags }}</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
                         <a href="{% url 'article_detail' article.id %}" class="btn btn-sm btn-outline-primary">Read More</a>
                         <small class="text-muted">{{ article.created_at|timesince }} ago</small>
