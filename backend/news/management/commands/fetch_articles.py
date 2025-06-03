@@ -1,10 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
-import openai
 from openai import OpenAI
 import logging
-from newspaper import Article
+from newspaper import Article as NewsArticle
 from django.core.management.base import BaseCommand
 from news.models import Article, Category
 from django.conf import settings
@@ -21,20 +20,20 @@ HEADERS = {
 session = requests.Session()
 session.headers.update(HEADERS)
 
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
 def fetch_news_articles(sources):
     articles = []
     for source in sources:
         try:
-            response = session.get(source, verify=False)  # Disable SSL verification to prevent SSL errors (use with caution)
+            response = session.get(source, verify=False)
             response.raise_for_status()
-            # Parse as XML because RSS is XML
             soup = BeautifulSoup(response.content, "xml")
             for item in soup.find_all("item"):
                 title = item.find("title").text if item.find("title") else ""
                 link = item.find("link").text if item.find("link") else ""
                 pub_date = item.find("pubDate").text if item.find("pubDate") else ""
                 description = item.find("description").text if item.find("description") else ""
-                # Skip articles with invalid or missing links
                 if not link or not link.startswith("http"):
                     logger.warning(f"Skipping article with invalid link: {link}")
                     continue
@@ -53,7 +52,7 @@ def get_full_article_content(url):
         logger.warning(f"Skipping invalid URL for content fetch: {url}")
         return ""
     try:
-        article = Article(url)
+        article = NewsArticle(url)
         article.download()
         article.parse()
         return article.text
@@ -71,15 +70,16 @@ def get_full_article_content(url):
 
 def generate_summary(content):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a summarization bot."},
-                {"role": "user", "content": f"Summarize this article: {content}"},
+                {"role": "system", "content": "You are a helpful assistant that summarizes news articles."},
+                {"role": "user", "content": f"Summarize this article:\n\n{content}"}
             ],
+            temperature=0.7,
             max_tokens=300
         )
-        return response.choices[0].message['content'].strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Error generating summary: {e}")
         return ""
@@ -109,64 +109,38 @@ def store_articles(articles, max_workers=5):
         results = list(executor.map(process_single_article, filtered_articles))
     return results
 
-def generate_news_content(categories):
-    try:
-        prompt = f"Generate engaging news content on the following categories: {', '.join(categories)}"
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a journalist."},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=500
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        logger.error(f"Error generating news content: {e}")
-        return ""
-
 class Command(BaseCommand):
     help = 'Fetch news articles using OpenAI'
 
     def handle(self, *args, **kwargs):
         try:
-            # Get all categories
             categories = Category.objects.all()
-            
-            # Set up OpenAI client with timeout
-            client = openai.OpenAI(
-                api_key=settings.OPENAI_API_KEY,
-                timeout=30.0  # Set a 30-second timeout
-            )
-            
+
             for category in categories:
                 try:
-                    # Check if we already have recent articles for this category
                     recent_articles = Article.objects.filter(
                         category=category,
                         created_at__gte=datetime.now() - timedelta(hours=24)
                     ).count()
-                    
-                    if recent_articles >= 5:  # Skip if we already have enough recent articles
+
+                    if recent_articles >= 5:
                         self.stdout.write(
                             self.style.SUCCESS(
                                 f'Category {category.name} already has recent articles'
                             )
                         )
                         continue
-                    
-                    # Generate article content
-                    article = self.generate_news_content(category, client)
+
+                    article = self.generate_news_content(category)
                     if article:
                         self.stdout.write(
                             self.style.SUCCESS(
                                 f'Successfully created article for category {category.name}'
                             )
                         )
-                    
-                    # Add a small delay between API calls to avoid rate limits
+
                     time.sleep(2)
-                    
+
                 except Exception as e:
                     self.stdout.write(
                         self.style.ERROR(
@@ -174,43 +148,14 @@ class Command(BaseCommand):
                         )
                     )
                     continue
-                    
+
         except Exception as e:
             self.stdout.write(
                 self.style.ERROR(f'Error in fetch_articles command: {str(e)}')
             )
 
-<<<<<<< HEAD
-        for article in enriched_articles:
-            self.stdout.write(self.style.SUCCESS(f"Fetched: {article['title']}"))
-
-            
-logger = logging.getLogger(__name__)
-
-def generate_summary(article_text):
-    try:
-        client = OpenAI()
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes news articles."},
-                {"role": "user", "content": f"Summarize the following article:\n\n{article_text}"}
-            ],
-            temperature=0.7,
-            max_tokens=200
-        )
-
-        summary = response.choices[0].message.content.strip()
-        return summary
-
-    except Exception as e:
-        logger.error(f"Error generating summary: {e}")
-        return None
-=======
-    def generate_news_content(self, category, client):
+    def generate_news_content(self, category):
         try:
-            # Create a prompt for article generation
             prompt = f"""Generate a news article about {category.name}. 
             The article should be informative, engaging, and well-structured.
             Include a title, content, and a brief summary.
@@ -220,8 +165,7 @@ def generate_summary(article_text):
                 "content": "Article Content",
                 "summary": "Brief Summary"
             }}"""
-            
-            # Get article content from OpenAI with timeout
+
             response = client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
@@ -231,23 +175,20 @@ def generate_summary(article_text):
                 temperature=0.7,
                 max_tokens=1000
             )
-            
-            # Parse the response and create article
+
             article_data = json.loads(response.choices[0].message.content)
-            
-            # Create the article in the database
+
             article = Article.objects.create(
                 title=article_data.get('title', ''),
                 content=article_data.get('content', ''),
                 summary=article_data.get('summary', ''),
                 category=category
             )
-            
+
             return article
-            
+
         except Exception as e:
             self.stdout.write(
                 self.style.ERROR(f'Error generating article: {str(e)}')
             )
             return None
->>>>>>> d5bcabf5a34e8f8593a9bb0f5f909f32f5bfff27
