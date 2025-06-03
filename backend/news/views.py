@@ -23,7 +23,7 @@ import datetime
 
 from .models import CustomUser, Article, UserPreference, Category
 from .forms import RegisterForm_News, RegisterForm_Personal
-from .services import get_user_feed, generate_summary
+from .services import get_user_feed
 
 # Create your views here.
 
@@ -182,7 +182,6 @@ def home(request):
 
 def article_detail(request, article_id):
     article = get_object_or_404(Article, id=article_id)
-    generated_summary = generate_summary(article.content, max_words=400)
     
     from .services import analyze_sentiment, analyze_reading_level
     sentiment_score = analyze_sentiment(article.content) or 0
@@ -190,7 +189,7 @@ def article_detail(request, article_id):
     
     return render(request, 'article_detail.html', {
         'article': article,
-        'generated_summary': generated_summary,
+        'generated_summary': '',
         'sentiment_score': sentiment_score,
         'reading_level': reading_level,
     })
