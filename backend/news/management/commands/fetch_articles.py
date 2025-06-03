@@ -178,7 +178,12 @@ class Command(BaseCommand):
                 max_tokens=1000
             )
 
-            article_data = json.loads(response.choices[0].message.content)
+            article_data = json.loads(response.choices[0].message.content.strip())
+            if not article_data or not isinstance(article_data, dict):
+                self.stdout.write(
+                    self.style.ERROR('Invalid response format from OpenAI')
+                )
+                return None
 
             article = Article.objects.create(
                 title=article_data.get('title', ''),
