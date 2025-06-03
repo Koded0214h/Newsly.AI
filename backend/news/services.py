@@ -38,6 +38,10 @@ def fetch_articles():
                 published = getattr(entry, 'published', None)
                 summary = getattr(entry, 'summary', '')
 
+                # Clean HTML tags from summary
+                from bs4 import BeautifulSoup
+                summary_text = BeautifulSoup(summary, "html.parser").get_text()
+
                 if Article.objects.filter(url=url).exists():
                     print(f"Article with URL {url} already exists. Skipping.")
                     continue
@@ -51,7 +55,7 @@ def fetch_articles():
                     image_url = article.top_image if article.top_image else ''
                 except Exception as e:
                     print(f"Failed to fetch full article content for {url}: {e}")
-                    content = summary  # fallback to summary
+                    content = summary_text  # fallback to cleaned summary
                     image_url = ''
 
                 if not title or not content or not url:
@@ -61,7 +65,7 @@ def fetch_articles():
                 Article.objects.create(
                     title=title,
                     content=content,
-                    summary=summary,
+                    summary=summary_text,
                     url=url,
                     image_url=image_url,
                     category=None,
