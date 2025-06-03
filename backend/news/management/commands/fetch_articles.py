@@ -156,56 +156,74 @@ class Command(BaseCommand):
                 self.style.ERROR(f'Error in fetch_articles command: {str(e)}')
             )
 
-def generate_news_content(self, category, client):
-    try:
-        # Create a strict prompt to enforce JSON format
-        prompt = f"""
+    def generate_news_content(self, category):
+        """
+        Ask OpenAI for a ready-to-save news article in strict JSON.
+        Returns the created Article instance or None on failure.
+        """
+        try:
+            prompt = f"""
 Generate a news article about "{category.name}".
-Respond ONLY with valid JSON in this exact structure:
+Respond ONLY with valid JSON in *this exact* structure:
 {{
   "title": "The news title",
   "content": "Full content of the article",
   "summary": "Brief summary of the article"
 }}
-Do not include any explanation or extra text—only output the JSON.
+NO commentary, no markdown – just the JSON.
 """
 
-        # Call OpenAI
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "You are a news article generator."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
+            # --- call OpenAI in JSON mode -----------------------------
+            response = client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": "You are a news article generator."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
 
-        # Get the message content
-        raw_content = response.choices[0].message.content.strip()
+            raw_content = response.choices[0].message.content.strip()
+            if not raw_content:
+                self.stdout.write(self.style.ERROR("OpenAI returned an empty message."))
+                return None
 
-        if not raw_content:
-            self.stdout.write(self.style.ERROR("OpenAI returned an empty message."))
+            # Strip ```json ... ``` if included
+            if raw_content.startswith("```"):
+                raw_content = raw_content.strip("`")
+                if raw_content.lower().startswith("json"):
+                    raw_content = raw_content[4:].strip()
+                if raw_content.endswith("```"):
+                    raw_content = raw_content[:-3].strip()
+
+            try:
+                article_data = json.loads(raw_content)
+            except json.JSONDecodeError as e:
+                self.stdout.write(self.style.ERROR(
+                    f"JSON decode error: {e}\nRaw content ↓\n{raw_content}"
+                ))
+                return None
+
+            for key in ("title", "content", "summary"):
+                if key not in article_data or not article_data[key].strip():
+                    self.stdout.write(self.style.ERROR(
+                        f"Key '{key}' missing or empty in OpenAI response.\nRaw content ↓\n{raw_content}"
+                    ))
+                    return None
+
+            article = Article.objects.create(
+                title=article_data["title"],
+                content=article_data["content"],
+                summary=article_data["summary"],
+                category=category
+            )
+
+            return article
+
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(f'Error generating article: {str(e)}')
+            )
             return None
-
-        try:
-            article_data = json.loads(raw_content)
-        except json.JSONDecodeError as e:
-            self.stdout.write(self.style.ERROR(
-                f"Failed to parse JSON from OpenAI response: {e}\nRaw content:\n{raw_content}"
-            ))
-            return None
-
-        # Save to database
-        article = Article.objects.create(
-            title=article_data.get('title', ''),
-            content=article_data.get('content', ''),
-            summary=article_data.get('summary', ''),
-            category=category
-        )
-
-        return article
-
-    except Exception as e:
-        self.stdout.write(self.style.ERROR(f'Error generating article: {str(e)}'))
-        return None
