@@ -79,9 +79,11 @@ class UserPreference(models.Model):
         ('weekly', 'Weekly'),
     ]
 
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='userpreference')
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='preferences')
     frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='daily')
     categories = models.ManyToManyField('Category', related_name='preferred_by')
+    digest_enabled = models.BooleanField(default=True)
+    digest_time = models.TimeField(default=time(8, 0))  # Default to 8 AM
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -117,13 +119,4 @@ class Article(models.Model):
 
     class Meta:
         ordering = ['-published_at']
-
-class UserPreferences(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-    digest_enabled = models.BooleanField(default=True)
-    digest_time = models.TimeField(default=time(8, 0))  # Default to 8 AM
-    preferred_categories = models.ManyToManyField(Category, blank=True)
-    
-    def __str__(self):
-        return f"{self.user.username}'s preferences"
 
