@@ -3,7 +3,7 @@ from django.core.mail import get_connection, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
-from news.models import CustomUser, Article, UserPreferences
+from news.models import CustomUser, Article, UserPreference
 from datetime import timedelta
 import logging
 import datetime
@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         current_time = timezone.now().time()
         # Get users who want digest at current hour
-        users_to_notify = UserPreferences.objects.filter(
+        users_to_notify = UserPreference.objects.filter(
             digest_enabled=True,
             digest_time__hour=current_time.hour
         )

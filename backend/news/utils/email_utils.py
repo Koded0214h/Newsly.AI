@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from news.models import Article, UserPreferences
+from news.models import Article, UserPreference
 
 def send_welcome_email(user):
     subject = 'Welcome to Newsly.AI!'
@@ -23,7 +23,7 @@ def send_welcome_email(user):
 
 def send_news_digest():
     # Get all users with digest preferences
-    users = UserPreferences.objects.filter(digest_enabled=True)
+    users = UserPreference.objects.filter(digest_enabled=True)
     
     for user_pref in users:
         # Get articles from the last 24 hours

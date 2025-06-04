@@ -137,12 +137,12 @@ def home(request):
     # Get user preferences if user is authenticated
     if request.user.is_authenticated:
         try:
-            user_prefs = UserPreferences.objects.get(user=request.user)
+            user_prefs = UserPreference.objects.get(user=request.user)
             # Get categories based on user preferences
             preferred_categories = user_prefs.categories.all()
             # Get articles from preferred categories
             articles = Article.objects.filter(category__in=preferred_categories).order_by('-created_at')
-        except UserPreferences.DoesNotExist:
+        except UserPreference.DoesNotExist:
             # If no preferences set, show all articles
             articles = Article.objects.all().order_by('-created_at')
     else:
@@ -390,7 +390,7 @@ def privacy(request):
 
 @login_required
 def profile(request):
-    user_prefs, created = UserPreferences.objects.get_or_create(user=request.user)
+    user_prefs, created = UserPreference.objects.get_or_create(user=request.user)
     categories = Category.objects.all()
     
     if request.method == 'POST':
