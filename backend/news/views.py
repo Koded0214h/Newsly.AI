@@ -123,7 +123,12 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Remove the immediate fetch_articles call
+            try:
+                # Fetch articles after successful login
+                call_command('fetch_articles')
+                messages.success(request, 'Articles have been updated successfully.')
+            except Exception as e:
+                messages.warning(request, f'Articles were fetched but there might be some issues: {str(e)}')
             return redirect('home')
         else:
             messages.error(request, 'Invalid username or password.')
