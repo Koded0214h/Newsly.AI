@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Newsly.AI{% endblock title %}</title>
+    <title>{% block title %}Newsly.AI{% endblock %}</title>
     {% load static %}
     <link rel="icon" type="image/x-icon" href="{% static 'news/favicon.ico' %}">
     <!-- Bootstrap CSS -->
@@ -233,7 +233,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'index' %}">Newsly.AI</a>
+            <a class="navbar-brand" href="{% url 'home' %}">Newsly.AI</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -260,7 +260,7 @@
                             <a class="nav-link" href="{% url 'login' %}">Login</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'register1' %}">Register</a>
+                            <a class="nav-link" href="{% url 'register' %}">Register</a>
                         </li>
                     {% endif %}
                 </ul>

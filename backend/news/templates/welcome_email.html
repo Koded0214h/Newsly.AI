@@ -4,148 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root {
-            --primary: #39FF14;
-            --primary-dark: #2ecc40;
-            --background: #242331;
-            --card-bg: #000027;
-            --text: #ffffff;
-            --text-muted: #7fff7f;
-        }
-
+        /* Email-safe CSS */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 0;
-            background-color: var(--background);
-            color: var(--text);
+            background-color: #f4f4f4;
+            color: #333333;
         }
-
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
-
         .header {
             text-align: center;
-            padding: 40px 0;
-            background: var(--card-bg);
+            padding: 30px 0;
+            background: #ffffff;
             border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
-
-        .header h1 {
-            color: var(--primary);
-            margin: 0;
-            font-size: 28px;
-        }
-
         .content {
-            background: var(--card-bg);
-            padding: 40px;
+            background: #ffffff;
+            padding: 30px;
             border-radius: 0 0 8px 8px;
         }
-
         .welcome-message {
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-
-        .features {
-            margin: 30px 0;
-        }
-
-        .feature {
+            font-size: 16px;
             margin-bottom: 20px;
-            padding-left: 25px;
-            position: relative;
         }
-
-        .feature:before {
-            content: "→";
-            color: var(--primary);
-            position: absolute;
-            left: 0;
+        .features {
+            margin: 25px 0;
         }
-
+        .feature {
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
         .cta-button {
             display: inline-block;
-            background: var(--primary);
-            color: var(--card-bg);
-            padding: 15px 30px;
+            background: #4CAF50;
+            color: #ffffff;
+            padding: 12px 25px;
             text-decoration: none;
             border-radius: 4px;
-            font-weight: 500;
+            font-weight: bold;
             margin: 20px 0;
         }
-
         .footer {
             text-align: center;
             padding: 20px;
-            color: var(--text-muted);
-            font-size: 14px;
+            color: #666666;
+            font-size: 12px;
         }
-
         .footer a {
-            color: var(--primary);
+            color: #4CAF50;
             text-decoration: none;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Welcome to Newsly.AI</h1>
+        <div class="header" style="text-align: center; padding: 30px 0; background: #ffffff; border-radius: 8px 8px 0 0; margin-bottom: 0;">
+            <h1 style="color: #4CAF50; margin: 0; font-size: 24px;">Welcome to Newsly.AI</h1>
         </div>
 
-        <div class="content">
-            <div class="welcome-message">
+        <div class="content" style="background: #ffffff; padding: 30px; border-radius: 0 0 8px 8px;">
+            <div class="welcome-message" style="font-size: 16px; margin-bottom: 20px;">
                 <p>Hello {{ user.first_name }},</p>
                 <p>Welcome to Newsly.AI - Your AI-Powered News Companion! 🚀</p>
             </div>
 
-            <div class="features">
-                <h2>Here's what you can do:</h2>
-                <div class="feature">
-                    <strong>Personalized News Feed</strong>
-                    <p>Get news tailored to your interests and preferences</p>
+            <div class="features" style="margin: 25px 0;">
+                <h2 style="color: #333333; margin-bottom: 20px;">Here's what you can do:</h2>
+                <div class="feature" style="margin-bottom: 15px; padding-left: 20px;">
+                    <strong style="color: #4CAF50;">Personalized News Feed</strong>
+                    <p style="margin: 5px 0;">Get news tailored to your interests and preferences</p>
                 </div>
-                <div class="feature">
-                    <strong>AI-Powered Summaries</strong>
-                    <p>Quick, accurate summaries of the latest news</p>
+                <div class="feature" style="margin-bottom: 15px; padding-left: 20px;">
+                    <strong style="color: #4CAF50;">AI-Powered Summaries</strong>
+                    <p style="margin: 5px 0;">Quick, accurate summaries of the latest news</p>
                 </div>
-                <div class="feature">
-                    <strong>Customizable Digests</strong>
-                    <p>Receive daily or weekly digests of your favorite topics</p>
+                <div class="feature" style="margin-bottom: 15px; padding-left: 20px;">
+                    <strong style="color: #4CAF50;">Customizable Digests</strong>
+                    <p style="margin: 5px 0;">Receive daily or weekly digests of your favorite topics</p>
                 </div>
             </div>
 
-            <a href="{{ frontend_url }}/preferences" class="cta-button">Customize Your Experience</a>
+            <a href="{{ frontend_url }}/preferences" style="display: inline-block; background: #4CAF50; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Customize Your Experience</a>
 
-            <p>We're excited to have you on board! If you have any questions, feel free to reach out to our support team.</p>
+            <p style="margin-top: 20px;">We're excited to have you on board! If you have any questions, feel free to reach out to our support team.</p>
         </div>
 
-        <div class="footer">
-            <p>© {{ current_year }} Newsly.AI. All rights reserved.</p>
-            <p>
-                <a href="{{ frontend_url }}/help">Help Center</a> |
-                <a href="{{ frontend_url }}/contact">Contact Us</a>
+        <div class="footer" style="text-align: center; padding: 20px; color: #666666; font-size: 12px;">
+            <p style="margin: 5px 0;">© {{ current_year }} Newsly.AI. All rights reserved.</p>
+            <p style="margin: 5px 0;">
+                <a href="{{ frontend_url }}/help" style="color: #4CAF50; text-decoration: none;">Help Center</a> |
+                <a href="{{ frontend_url }}/contact" style="color: #4CAF50; text-decoration: none;">Contact Us</a>
             </p>
         </div>
     </div>
