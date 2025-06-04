@@ -26,19 +26,28 @@ def get_user_feed(user, toggle='all'):
         # Get user's preferred categories
         preferred_categories = user.interests.all()
         
-        # Base query with country filter
-        articles = Article.objects.filter(
-            category__in=preferred_categories,
-            published_at__isnull=False
-        ).order_by('-published_at')
+        # Base query
+        articles = Article.objects.filter(published_at__isnull=False)
         
-        # Apply country filter if available
-        if hasattr(user, 'country'):
-            articles = articles.filter(source__country=user.country)
+        # Apply category filter if user has interests
+        if preferred_categories.exists():
+            articles = articles.filter(category__in=preferred_categories)
+        
+        # Apply country filter
+        if hasattr(user, 'country') and user.country:
+            articles = articles.filter(source__endswith=f"_{user.country}")
         
         # Apply toggle filter
         if toggle == 'breaking':
             articles = articles.filter(is_breaking=True)
+        
+        # Order by published date
+        articles = articles.order_by('-published_at')
+        
+        logger.info(f"Fetching feed for user {user.email}")
+        logger.info(f"Categories: {[cat.name for cat in preferred_categories]}")
+        logger.info(f"Country: {user.country}")
+        logger.info(f"Found {articles.count()} articles")
         
         return articles
     except Exception as e:
@@ -46,88 +55,79 @@ def get_user_feed(user, toggle='all'):
         return Article.objects.none()
 
 def fetch_articles():
-    """Fetch articles using Newsdata.io API."""
+    """Fetch articles using Newsdata.io API for each user's country and interests."""
     try:
         # Download required NLTK data
         download_nltk_data()
         
-        # Get all unique countries from users
-        countries = CustomUser.objects.values_list('country', flat=True).distinct()
-        
-        for country in countries:
+        # Get all users
+        users = CustomUser.objects.all()
+        for user in users:
             try:
-                articles = fetch_articles_from_newsdata(country)
-                logger.info(f"Successfully fetched {len(articles)} articles for {country}")
+                country = user.country
+                interests = user.interests.all()
+                if not country or not interests.exists():
+                    continue  # Skip users without country or interests
+                for category in interests:
+                    # Fetch articles for this country and category
+                    articles = fetch_articles_from_newsdata_with_category(country, category.name)
+                    logger.info(f"Fetched {len(articles)} articles for {user.email} ({country}, {category.name})")
             except Exception as e:
-                logger.error(f"Error fetching articles for {country}: {str(e)}")
+                logger.error(f"Error fetching articles for user {user.email}: {str(e)}")
                 continue
-                
     except Exception as e:
         logger.error(f"Error in fetch_articles: {str(e)}")
 
-def fetch_articles_from_newsdata(country_code='ng'):
-    """Fetch articles from Newsdata.io API"""
+def fetch_articles_from_newsdata_with_category(country_code, category_name):
+    """Fetch articles from Newsdata.io API for a specific country and category."""
     api_key = settings.NEWSDATA_API_KEY
-    url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
-    
+    url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en&category={category_name}'
     try:
+        logger.info(f"Fetching news for country: {country_code}, category: {category_name}")
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
-        
         if data.get('status') == 'success':
             articles = []
             for article_data in data.get('results', []):
                 try:
-                    # Ensure summary is not null
-                    summary = article_data.get('description', '')
-                    if not summary:
-                        summary = article_data.get('title', '')  # Use title as fallback
-                    
-                    # Ensure title is not too long
-                    title = article_data.get('title', '')[:500]  # Truncate to 500 chars
-                    
-                    # Convert naive datetime to timezone-aware
+                    summary = article_data.get('description', '') or article_data.get('title', '')
+                    title = article_data.get('title', '')[:500]
                     pub_date = article_data.get('pubDate')
                     if pub_date:
                         pub_date = timezone.make_aware(datetime.fromisoformat(pub_date.replace('Z', '+00:00')))
-                    
-                    # Get or create default category
-                    default_category, _ = Category.objects.get_or_create(name='General')
-                    
-                    # Create or update article
+                    # Use the provided category or fallback
+                    category, _ = Category.objects.get_or_create(
+                        name=category_name,
+                        defaults={'description': f'News about {category_name}'}
+                    )
                     article, created = Article.objects.get_or_create(
                         url=article_data['link'],
                         defaults={
                             'title': title,
-                            'content': article_data.get('content', '')[:10000],  # Truncate content if too long
-                            'summary': summary,  # No truncation needed for TextField
-                            'source': f"{article_data.get('source_id', '')[:200]}_{country_code}",  # Include country in source
+                            'content': article_data.get('content', '')[:10000],
+                            'summary': summary,
+                            'source': f"{article_data.get('source_id', '')[:200]}_{country_code}",
                             'published_at': pub_date,
                             'image_url': article_data.get('image_url'),
                             'is_breaking': article_data.get('is_breaking', False),
-                            'category': default_category,  # Assign default category
+                            'category': category,
                         }
                     )
-                    
-                    if created:
-                        # Analyze sentiment and reading level
-                        if article.content:
-                            blob = TextBlob(article.content)
-                            article.sentiment_score = blob.sentiment.polarity
-                            article.reading_level = calculate_reading_level(article.content)
-                            article.save()
-                    
+                    if created and article.content:
+                        blob = TextBlob(article.content)
+                        article.sentiment_score = blob.sentiment.polarity
+                        article.reading_level = calculate_reading_level(article.content)
+                        article.save()
                     articles.append(article)
                 except Exception as e:
                     logger.error(f"Error processing article: {str(e)}")
                     continue
-            
+            logger.info(f"Successfully processed {len(articles)} articles for {country_code}, {category_name}")
             return articles
         else:
             logger.error(f"Newsdata.io API error: {data.get('message', 'Unknown error')}")
             return []
-            
     except Exception as e:
         logger.error(f"Error fetching from Newsdata.io: {str(e)}")
         return []
