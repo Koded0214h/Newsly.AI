@@ -40,6 +40,21 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_digest_sent = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    country = models.CharField(
+        max_length=2,
+        choices=[
+            ('us', 'United States'),
+            ('gb', 'United Kingdom'),
+            ('ng', 'Nigeria'),
+            ('ca', 'Canada'),
+            ('au', 'Australia'),
+            ('in', 'India'),
+            ('za', 'South Africa'),
+            ('ke', 'Kenya'),
+            ('gh', 'Ghana'),
+        ],
+        default='us'
+    )
     
     groups = models.ManyToManyField(
         'auth.Group',

@@ -4,20 +4,41 @@ from django.core.cache import cache
 from .models import Article, CustomUser, Category
 from django.db.models import Q
 from datetime import datetime, timedelta
+import requests
+from django.conf import settings
+from textblob import TextBlob
+import nltk
+from django.utils import timezone
+import logging
 
-def get_user_feed(user, toggle='breaking'):
+logger = logging.getLogger(__name__)
+
+def get_user_feed(user, toggle='all'):
     """
     Get personalized feed for a user based on their interests and preferences.
     """
     try:
-        interests = user.interests.all()
+        # Get user's preferred categories
+        preferred_categories = user.interests.all()
+        
+        # Base query with country filter
         articles = Article.objects.filter(
-            Q(category__in=interests) | Q(category__isnull=True)
-        ).order_by('-created_at')
+            category__in=preferred_categories,
+            published_at__isnull=False
+        ).order_by('-published_at')
+        
+        # Apply country filter if available
+        if hasattr(user, 'country'):
+            articles = articles.filter(source__country=user.country)
+        
+        # Apply toggle filter
+        if toggle == 'breaking':
+            articles = articles.filter(is_breaking=True)
+        
         return articles
     except Exception as e:
-        print(f"Error in get_user_feed: {str(e)}")
-        return []
+        logger.error(f"Error getting user feed: {str(e)}")
+        return Article.objects.none()
 
 def fetch_articles():
     """Fetch articles using feedparser and newspaper3k."""
@@ -75,6 +96,110 @@ def fetch_articles():
 
     except Exception as e:
         print(f"Error in fetch_articles: {str(e)}")
+
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.download('wordnet')
+    try:
+        nltk.data.find('taggers/averaged_perceptron_tagger')
+    except LookupError:
+        nltk.download('averaged_perceptron_tagger')
+
+def fetch_articles_from_newsdata(country_code='us'):
+    """Fetch articles from Newsdata.io API"""
+    api_key = 'pub_8b60dcb2b145411f9bde7902c0d3be84'
+    url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get('status') == 'success':
+            articles = []
+            for article_data in data.get('results', []):
+                try:
+                    # Create or update article
+                    article, created = Article.objects.get_or_create(
+                        url=article_data['link'],
+                        defaults={
+                            'title': article_data['title'],
+                            'content': article_data.get('content', ''),
+                            'summary': article_data.get('description', ''),
+                            'source': article_data.get('source_id', ''),
+                            'published_at': article_data.get('pubDate'),
+                            'image_url': article_data.get('image_url'),
+                            'is_breaking': article_data.get('is_breaking', False),
+                        }
+                    )
+                    
+                    if created:
+                        # Analyze sentiment and reading level
+                        if article.content:
+                            blob = TextBlob(article.content)
+                            article.sentiment_score = blob.sentiment.polarity
+                            article.reading_level = calculate_reading_level(article.content)
+                            article.save()
+                    
+                    articles.append(article)
+                except Exception as e:
+                    logger.error(f"Error processing article: {str(e)}")
+                    continue
+            
+            return articles
+        else:
+            logger.error(f"Newsdata.io API error: {data.get('message', 'Unknown error')}")
+            return []
+            
+    except Exception as e:
+        logger.error(f"Error fetching from Newsdata.io: {str(e)}")
+        return []
+
+def calculate_reading_level(text):
+    """Calculate the Flesch Reading Ease score"""
+    try:
+        blob = TextBlob(text)
+        sentences = blob.sentences
+        words = blob.words
+        syllables = sum(count_syllables(word) for word in words)
+        
+        if not sentences or not words:
+            return 0
+            
+        avg_sentence_length = len(words) / len(sentences)
+        avg_syllables_per_word = syllables / len(words)
+        
+        # Flesch Reading Ease formula
+        score = 206.835 - (1.015 * avg_sentence_length) - (84.6 * avg_syllables_per_word)
+        return max(0, min(100, score))  # Normalize between 0 and 100
+    except Exception as e:
+        logger.error(f"Error calculating reading level: {str(e)}")
+        return 0
+
+def count_syllables(word):
+    """Count the number of syllables in a word"""
+    word = word.lower()
+    count = 0
+    vowels = "aeiouy"
+    previous_is_vowel = False
+    
+    for char in word:
+        is_vowel = char in vowels
+        if is_vowel and not previous_is_vowel:
+            count += 1
+        previous_is_vowel = is_vowel
+    
+    if word.endswith('e'):
+        count -= 1
+    if count == 0:
+        count = 1
+    return count
 
 from textblob import TextBlob
 

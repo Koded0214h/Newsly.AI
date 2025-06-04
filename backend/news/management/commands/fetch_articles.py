@@ -1,23 +1,23 @@
 from django.core.management.base import BaseCommand
-from news.models import Article, Category
-from news.services import fetch_articles
-from django.utils import timezone
-from datetime import timedelta
-import subprocess
-import sys
+from news.services import fetch_articles_from_newsdata
+from news.models import CustomUser
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Fetch news articles using newspaper3k'
+    help = 'Fetch news articles from various sources'
 
-    def handle(self, *args, **kwargs):
-        try:
-            # Download TextBlob data
-            self.stdout.write('Downloading TextBlob data...')
-            subprocess.check_call([sys.executable, '-m', 'textblob.download_corpora'])
-            self.stdout.write(self.style.SUCCESS('Successfully downloaded TextBlob data.'))
-
-            # Fetch articles
-            fetch_articles()
-            self.stdout.write(self.style.SUCCESS('Successfully fetched and stored news articles.'))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error in fetch_articles command: {str(e)}'))
+    def handle(self, *args, **options):
+        self.stdout.write('Starting to fetch articles...')
+        
+        # Get unique countries from users
+        countries = CustomUser.objects.values_list('country', flat=True).distinct()
+        
+        # Fetch articles for each country
+        for country in countries:
+            self.stdout.write(f'Fetching articles for country: {country}')
+            articles = fetch_articles_from_newsdata(country)
+            self.stdout.write(self.style.SUCCESS(f'Successfully fetched {len(articles)} articles for {country}'))
+        
+        self.stdout.write(self.style.SUCCESS('Successfully fetched and stored news articles.'))
