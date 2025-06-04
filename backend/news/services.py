@@ -67,7 +67,7 @@ def fetch_articles():
 
 def fetch_articles_from_newsdata(country_code='ng'):
     """Fetch articles from Newsdata.io API"""
-    api_key = env('NEWS_API_KEY')
+    api_key = settings.NEWSDATA_API_KEY
     url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
     
     try:

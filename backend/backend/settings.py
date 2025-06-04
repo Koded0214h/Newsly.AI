@@ -21,12 +21,11 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG', default=False)
 
 # API Keys
-NEWS_API_KEY = env('NEWS_API_KEY')
-NEWSDATA_API_KEY = env('NEWSDATA_API_KEY', default='')
-if NEWS_API_KEY:
-    logger.info(f"Loaded NEWS_API_KEY: {NEWS_API_KEY}")  # Full key for debugging, remove after verification
+NEWSDATA_API_KEY = env('NEWSDATA_API_KEY')
+if NEWSDATA_API_KEY:
+    logger.info("NEWSDATA_API_KEY loaded successfully")
 else:
-    logger.info("NEWS_API_KEY not found!")
+    logger.warning("NEWSDATA_API_KEY not found!")
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'newsly-ai.onrender.com']
 
