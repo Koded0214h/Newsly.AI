@@ -10,6 +10,7 @@ from textblob import TextBlob
 import nltk
 from django.utils import timezone
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,79 +42,28 @@ def get_user_feed(user, toggle='all'):
         return Article.objects.none()
 
 def fetch_articles():
-    """Fetch articles using feedparser and newspaper3k."""
+    """Fetch articles using Newsdata.io API."""
     try:
-        rss_feeds = [
-            'http://feeds.bbci.co.uk/news/rss.xml',
-            'http://rss.cnn.com/rss/edition.rss',
-            'http://feeds.reuters.com/reuters/topNews',
-            'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
-            'https://www.theguardian.com/world/rss',
-        ]
-
-        for feed_url in rss_feeds:
-            feed = feedparser.parse(feed_url)
-            for entry in feed.entries[:5]:  # Limit to first 5 entries per feed
-                url = entry.link
-                title = entry.title
-                published = getattr(entry, 'published', None)
-                summary = getattr(entry, 'summary', '')
-
-                # Clean HTML tags from summary
-                from bs4 import BeautifulSoup
-                summary_text = BeautifulSoup(summary, "html.parser").get_text()
-
-                if Article.objects.filter(url=url).exists():
-                    print(f"Article with URL {url} already exists. Skipping.")
-                    continue
-
-                # Fetch full article content using newspaper3k
-                try:
-                    article = NPArticle(url)
-                    article.download()
-                    article.parse()
-                    content = article.text
-                    image_url = article.top_image if article.top_image else ''
-                except Exception as e:
-                    print(f"Failed to fetch full article content for {url}: {e}")
-                    content = summary_text  # fallback to cleaned summary
-                    image_url = ''
-
-                if not title or not content or not url:
-                    print(f"Skipping article with missing fields: {url}")
-                    continue
-
-                Article.objects.create(
-                    title=title,
-                    content=content,
-                    summary=summary_text,
-                    url=url,
-                    image_url=image_url,
-                    category=None,
-                    created_at=datetime.now()
-                )
-                print(f"Created article: {title}")
-
+        # Download required NLTK data
+        download_nltk_data()
+        
+        # Get all unique countries from users
+        countries = CustomUser.objects.values_list('country', flat=True).distinct()
+        
+        for country in countries:
+            try:
+                articles = fetch_articles_from_newsdata(country)
+                logger.info(f"Successfully fetched {len(articles)} articles for {country}")
+            except Exception as e:
+                logger.error(f"Error fetching articles for {country}: {str(e)}")
+                continue
+                
     except Exception as e:
-        print(f"Error in fetch_articles: {str(e)}")
-
-def download_nltk_data():
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt')
-    try:
-        nltk.data.find('corpora/wordnet')
-    except LookupError:
-        nltk.download('wordnet')
-    try:
-        nltk.data.find('taggers/averaged_perceptron_tagger')
-    except LookupError:
-        nltk.download('averaged_perceptron_tagger')
+        logger.error(f"Error in fetch_articles: {str(e)}")
 
 def fetch_articles_from_newsdata(country_code='us'):
     """Fetch articles from Newsdata.io API"""
-    api_key = 'pub_8b60dcb2b145411f9bde7902c0d3be84'
+    api_key = env('NEWSDATA_API_KEY')
     url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
     
     try:
@@ -160,6 +110,20 @@ def fetch_articles_from_newsdata(country_code='us'):
     except Exception as e:
         logger.error(f"Error fetching from Newsdata.io: {str(e)}")
         return []
+
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
+    try:
+        nltk.data.find('corpora/wordnet')
+    except LookupError:
+        nltk.download('wordnet')
+    try:
+        nltk.data.find('taggers/averaged_perceptron_tagger')
+    except LookupError:
+        nltk.download('averaged_perceptron_tagger')
 
 def calculate_reading_level(text):
     """Calculate the Flesch Reading Ease score"""
