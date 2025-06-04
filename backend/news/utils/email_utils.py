@@ -27,7 +27,7 @@ def send_news_digest():
     
     for user_pref in users:
         # Get articles from the last 24 hours
-        recent_articles = NewsArticle.objects.filter(
+        recent_articles = Article.objects.filter(
             created_at__gte=timezone.now() - timedelta(days=1)
         ).order_by('-created_at')[:5]  # Get top 5 articles
         
