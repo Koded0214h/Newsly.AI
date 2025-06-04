@@ -8,49 +8,33 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.core.cache import cache
-import json
+from news.services import get_user_feed
+import logging
+
+logger = logging.getLogger(__name__)
 
 def home(request):
-    # Get filter parameters
-    topic = request.GET.get('topic', '')
-    search_query = request.GET.get('search', '')
-    page = request.GET.get('page', 1)
-    
-    # Base queryset
-    articles = Article.objects.all().order_by('-published_at')
-    print(f"Total articles before filtering: {articles.count()}")
-    
-    # Apply filters
-    if topic:
-        articles = articles.filter(topic=topic)
-    if search_query:
-        articles = articles.filter(
-            Q(title__icontains=search_query) |
-            Q(content__icontains=search_query)
-        )
-    
+    # Get user preferences if user is authenticated
+    if request.user.is_authenticated:
+        try:
+            # Get personalized feed based on user's country and interests
+            articles = get_user_feed(request.user)
+            logger.info(f"Fetched {articles.count()} personalized articles for {request.user.email}")
+        except Exception as e:
+            logger.error(f"Error getting personalized feed: {str(e)}")
+            articles = Article.objects.none()
+    else:
+        # For non-authenticated users, show all articles
+        articles = Article.objects.all().order_by('-published_at')
+
     # Pagination
-    paginator = Paginator(articles, 12)  # Show 12 articles per page
-    articles_page = paginator.get_page(page)
-    print(f"Articles in current page: {len(articles_page)}")
-    
-    # Get unique topics for filter
-    topics = Article.objects.values_list('topic', flat=True).distinct()
-    print(f"Available topics: {list(topics)}")
-    
-    # Debug: Print first article details if available
-    if articles_page:
-        first_article = articles_page[0]
-        print(f"First article title: {first_article.title}")
-        print(f"First article summary: {first_article.summary[:100]}...")
-    
-    context = {
-        'articles': articles_page,
-        'topics': topics,
-        'current_topic': topic,
-        'search_query': search_query,
-    }
-    return render(request, 'home.html', context)
+    paginator = Paginator(articles, 9)  # Show 9 articles per page (3x3 grid)
+    page_number = request.GET.get('page')
+    articles = paginator.get_page(page_number)
+
+    return render(request, 'home.html', {
+        'articles': articles,
+    })
 
 def article_detail(request, article_id):
     article = get_object_or_404(Article, id=article_id)

@@ -20,11 +20,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import datetime
+import logging
 
 from .models import CustomUser, Article, UserPreference, Category
-from .forms import RegisterForm_News, RegisterForm_Personal
+from .forms import RegisterForm_News, RegisterForm_Personal, CustomUserCreationForm, UserPreferenceForm
 from .services import get_user_feed
 from .utils.email_utils import send_welcome_email
+
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -140,43 +143,31 @@ def user_logout(request):
     return redirect('index')
 
 def home(request):
-    # Get user preferences if user is authenticated
-    if request.user.is_authenticated:
-        try:
-            # Get or create user preferences
-            user_prefs, created = UserPreference.objects.get_or_create(user=request.user)
-            
-            # If preferences were just created, set default categories
-            if created:
-                default_categories = Category.objects.filter(name__in=['Technology', 'Business', 'Science'])
-                user_prefs.categories.set(default_categories)
-                user_prefs.save()
-            
-            # Get articles based on user preferences and country
-            articles = Article.objects.filter(
-                category__in=user_prefs.categories.all(),
-                published_at__isnull=False
-            ).order_by('-published_at')
-            
-            # Apply country filter
-            if hasattr(request.user, 'country'):
-                articles = articles.filter(source__country=request.user.country)
-                
-        except Exception as e:
-            # If there's any error, show all articles
+    """Home view that shows personalized news feed."""
+    try:
+        if request.user.is_authenticated:
+            # Get personalized feed based on user's country and interests
+            articles = get_user_feed(request.user)
+            logger.info(f"Fetched {articles.count()} personalized articles for {request.user.email}")
+        else:
+            # For non-authenticated users, show all articles
             articles = Article.objects.all().order_by('-published_at')
-    else:
-        # For non-authenticated users, show all articles
-        articles = Article.objects.all().order_by('-published_at')
 
-    # Pagination
-    paginator = Paginator(articles, 9)  # Show 9 articles per page (3x3 grid)
-    page_number = request.GET.get('page')
-    articles = paginator.get_page(page_number)
+        # Pagination
+        paginator = Paginator(articles, 9)  # Show 9 articles per page
+        page_number = request.GET.get('page')
+        articles = paginator.get_page(page_number)
 
-    return render(request, 'home.html', {
-        'articles': articles,
-    })
+        return render(request, 'home.html', {
+            'articles': articles,
+            'categories': Category.objects.all(),
+        })
+    except Exception as e:
+        logger.error(f"Error in home view: {str(e)}")
+        return render(request, 'home.html', {
+            'articles': Article.objects.none(),
+            'categories': Category.objects.all(),
+        })
 
 @login_required
 def article_detail(request, article_id):
