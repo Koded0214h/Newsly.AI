@@ -142,13 +142,26 @@ def home(request):
     # Get user preferences if user is authenticated
     if request.user.is_authenticated:
         try:
-            user_prefs = UserPreference.objects.get(user=request.user)
+            # Get or create user preferences
+            user_prefs, created = UserPreference.objects.get_or_create(user=request.user)
+            
+            # If preferences were just created, set default categories
+            if created:
+                default_categories = Category.objects.filter(name__in=['Technology', 'Business', 'Science'])
+                user_prefs.categories.set(default_categories)
+                user_prefs.save()
+            
             # Get categories based on user preferences
             preferred_categories = user_prefs.categories.all()
+            
             # Get articles from preferred categories
-            articles = Article.objects.filter(category__in=preferred_categories).order_by('-created_at')
-        except UserPreference.DoesNotExist:
-            # If no preferences set, show all articles
+            if preferred_categories.exists():
+                articles = Article.objects.filter(category__in=preferred_categories).order_by('-created_at')
+            else:
+                # If no categories are set, show all articles
+                articles = Article.objects.all().order_by('-created_at')
+        except Exception as e:
+            # If there's any error, show all articles
             articles = Article.objects.all().order_by('-created_at')
     else:
         # For non-authenticated users, show all articles
