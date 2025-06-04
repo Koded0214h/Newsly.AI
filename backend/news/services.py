@@ -60,33 +60,45 @@ def fetch_articles():
         # Download required NLTK data
         download_nltk_data()
         
-        # Get all users
-        users = CustomUser.objects.all()
-        for user in users:
+        # Get all unique countries from users
+        countries = CustomUser.objects.values_list('country', flat=True).distinct()
+        
+        for country in countries:
             try:
-                country = user.country
-                interests = user.interests.all()
-                if not country or not interests.exists():
-                    continue  # Skip users without country or interests
-                for category in interests:
-                    # Fetch articles for this country and category
-                    articles = fetch_articles_from_newsdata_with_category(country, category.name)
-                    logger.info(f"Fetched {len(articles)} articles for {user.email} ({country}, {category.name})")
+                # Fetch all articles for this country at once
+                articles = fetch_articles_from_newsdata(country)
+                if articles:
+                    logger.info(f"Successfully fetched {len(articles)} articles for {country}")
+                    
+                    # Get all users for this country
+                    users = CustomUser.objects.filter(country=country)
+                    for user in users:
+                        interests = user.interests.all()
+                        if not interests.exists():
+                            continue
+                            
+                        # Filter articles by user's interests
+                        user_articles = [article for article in articles if article.category in interests]
+                        logger.info(f"Filtered {len(user_articles)} articles for user {user.email}")
+                        
             except Exception as e:
-                logger.error(f"Error fetching articles for user {user.email}: {str(e)}")
+                logger.error(f"Error fetching articles for {country}: {str(e)}")
                 continue
+                
     except Exception as e:
         logger.error(f"Error in fetch_articles: {str(e)}")
 
-def fetch_articles_from_newsdata_with_category(country_code, category_name):
-    """Fetch articles from Newsdata.io API for a specific country and category."""
+def fetch_articles_from_newsdata(country_code):
+    """Fetch articles from Newsdata.io API for a specific country."""
     api_key = settings.NEWSDATA_API_KEY
-    url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en&category={category_name}'
+    url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
+    
     try:
-        logger.info(f"Fetching news for country: {country_code}, category: {category_name}")
+        logger.info(f"Fetching news for country: {country_code}")
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
+        
         if data.get('status') == 'success':
             articles = []
             for article_data in data.get('results', []):
@@ -96,11 +108,14 @@ def fetch_articles_from_newsdata_with_category(country_code, category_name):
                     pub_date = article_data.get('pubDate')
                     if pub_date:
                         pub_date = timezone.make_aware(datetime.fromisoformat(pub_date.replace('Z', '+00:00')))
-                    # Use the provided category or fallback
+                    
+                    # Get category from article data
+                    category_name = article_data.get('category', ['General'])[0]
                     category, _ = Category.objects.get_or_create(
                         name=category_name,
                         defaults={'description': f'News about {category_name}'}
                     )
+                    
                     article, created = Article.objects.get_or_create(
                         url=article_data['link'],
                         defaults={
@@ -114,20 +129,24 @@ def fetch_articles_from_newsdata_with_category(country_code, category_name):
                             'category': category,
                         }
                     )
+                    
                     if created and article.content:
                         blob = TextBlob(article.content)
                         article.sentiment_score = blob.sentiment.polarity
                         article.reading_level = calculate_reading_level(article.content)
                         article.save()
+                    
                     articles.append(article)
                 except Exception as e:
                     logger.error(f"Error processing article: {str(e)}")
                     continue
-            logger.info(f"Successfully processed {len(articles)} articles for {country_code}, {category_name}")
+            
+            logger.info(f"Successfully processed {len(articles)} articles for {country_code}")
             return articles
         else:
             logger.error(f"Newsdata.io API error: {data.get('message', 'Unknown error')}")
             return []
+            
     except Exception as e:
         logger.error(f"Error fetching from Newsdata.io: {str(e)}")
         return []
