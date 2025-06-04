@@ -65,7 +65,7 @@ def fetch_articles():
     except Exception as e:
         logger.error(f"Error in fetch_articles: {str(e)}")
 
-def fetch_articles_from_newsdata(country_code='us'):
+def fetch_articles_from_newsdata(country_code='ng'):
     """Fetch articles from Newsdata.io API"""
     api_key = env('NEWSDATA_API_KEY')
     url = f'https://newsdata.io/api/1/news?apikey={api_key}&country={country_code}&language=en'
@@ -79,15 +79,28 @@ def fetch_articles_from_newsdata(country_code='us'):
             articles = []
             for article_data in data.get('results', []):
                 try:
+                    # Ensure summary is not null and truncate if too long
+                    summary = article_data.get('description', '')
+                    if not summary:
+                        summary = article_data.get('title', '')[:200]  # Use title as fallback
+                    
+                    # Ensure title is not too long
+                    title = article_data.get('title', '')[:300]  # Truncate to 300 chars
+                    
+                    # Convert naive datetime to timezone-aware
+                    pub_date = article_data.get('pubDate')
+                    if pub_date:
+                        pub_date = timezone.make_aware(datetime.fromisoformat(pub_date.replace('Z', '+00:00')))
+                    
                     # Create or update article
                     article, created = Article.objects.get_or_create(
                         url=article_data['link'],
                         defaults={
-                            'title': article_data['title'],
-                            'content': article_data.get('content', ''),
-                            'summary': article_data.get('description', ''),
-                            'source': article_data.get('source_id', ''),
-                            'published_at': article_data.get('pubDate'),
+                            'title': title,
+                            'content': article_data.get('content', '')[:10000],  # Truncate content if too long
+                            'summary': summary[:200],  # Truncate summary to 200 chars
+                            'source': article_data.get('source_id', '')[:100],  # Truncate source name
+                            'published_at': pub_date,
                             'image_url': article_data.get('image_url'),
                             'is_breaking': article_data.get('is_breaking', False),
                         }

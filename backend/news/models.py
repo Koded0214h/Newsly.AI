@@ -118,31 +118,23 @@ class Article(models.Model):
     slug = models.SlugField(max_length=320, blank=True)
     url = models.URLField(unique=True)
     content = models.TextField()
-    summary = models.TextField(blank=True)
+    summary = models.CharField(max_length=200, default='')
     sentiment_score = models.FloatField(null=True, blank=True)
     reading_level = models.FloatField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     source = models.CharField(max_length=100, blank=True)
     is_breaking = models.BooleanField(default=False)
-    topic = models.ForeignKey('Topic', on_delete=models.SET_NULL, null=True)
-    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
-    image_url = models.URLField(blank=True, null=True)
+    image_url = models.URLField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return self.title
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            # Generate slug from title
-            base_slug = slugify(self.title)
-            slug = base_slug
-            counter = 1
-            # Ensure slug uniqueness
-            while Article.objects.filter(slug=slug).exists():
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            self.slug = slug
+            self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
     class Meta:
