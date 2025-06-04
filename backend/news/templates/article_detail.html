@@ -18,24 +18,24 @@
                 <div class="article-meta mb-4">
                     <span class="badge bg-primary">{{ article.category.name }}</span>
                     <small class="text-muted ms-2">{{ article.created_at|date:"F j, Y" }}</small>
-                </div>
+                </div>                
                 
                 {% if article.image_url %}
                 <img src="{{ article.image_url }}" class="img-fluid rounded mb-4 shadow-sm" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/images/placeholder.png';">
                 {% else %}
                 <img src="/static/images/placeholder.png" class="img-fluid rounded mb-4 shadow-sm" alt="Placeholder image">
                 {% endif %}
+
+                {% if article.summary %}
+                <div class="article-summary mb-4 p-3 border rounded bg-light">
+                    <h4 class="h5 mb-3">Summary</h4>
+                    <p class="mb-0">{{ article.summary|striptags }}</p>
+                </div>
+                {% endif %}
                 
                 <div class="article-content mb-4" style="white-space: pre-wrap;">
                     {{ article.content|linebreaks }}
                 </div>
-                
-                {% if article.summary %}
-                <div class="article-summary mt-4 p-3 border rounded bg-light">
-                    <h4>Summary</h4>
-                    <p>{{ article.summary|striptags }}</p>
-                </div>
-                {% endif %}
 
                 {% if sentiment_score is not None %}
                 <div class="article-metrics mt-4">
