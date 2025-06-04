@@ -97,17 +97,27 @@ class Category(models.Model):
         return self.name
 
 class Article(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=300)
+    slug = models.SlugField(max_length=320, unique=True, blank=True)
+    url = models.URLField(unique=True)
     content = models.TextField()
     summary = models.TextField(blank=True)
-    url = models.URLField(unique=True)
-    image_url = models.URLField(blank=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='articles')
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    sentiment_score = models.FloatField(null=True, blank=True)
+    reading_level = models.FloatField(null=True, blank=True)
+    published_at = models.DateTimeField()
+    source = models.CharField(max_length=100)
+    is_breaking = models.BooleanField(default=False)
+    topic = models.ForeignKey('Topic', on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
+    image_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['-published_at']
 
 class UserPreferences(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
