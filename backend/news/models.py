@@ -117,6 +117,19 @@ class Article(models.Model):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            # Generate slug from title
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            # Ensure slug uniqueness
+            while Article.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['-published_at']
 
