@@ -11,6 +11,7 @@ import nltk
 from django.utils import timezone
 import logging
 from django.conf import settings
+from environ import env
 
 logger = logging.getLogger(__name__)
 
