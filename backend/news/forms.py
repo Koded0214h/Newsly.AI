@@ -10,7 +10,8 @@ class RegisterForm_Personal(forms.ModelForm):
     password2 = forms.CharField(widget=forms.PasswordInput())
     country = forms.ChoiceField(
         choices=CustomUser._meta.get_field('country').choices,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        required=True
     )
     
     class Meta:

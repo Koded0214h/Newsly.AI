@@ -79,13 +79,13 @@ def fetch_articles_from_newsdata(country_code='ng'):
             articles = []
             for article_data in data.get('results', []):
                 try:
-                    # Ensure summary is not null and truncate if too long
+                    # Ensure summary is not null
                     summary = article_data.get('description', '')
                     if not summary:
-                        summary = article_data.get('title', '')[:200]  # Use title as fallback
+                        summary = article_data.get('title', '')  # Use title as fallback
                     
                     # Ensure title is not too long
-                    title = article_data.get('title', '')[:300]  # Truncate to 300 chars
+                    title = article_data.get('title', '')[:500]  # Truncate to 500 chars
                     
                     # Convert naive datetime to timezone-aware
                     pub_date = article_data.get('pubDate')
@@ -98,8 +98,8 @@ def fetch_articles_from_newsdata(country_code='ng'):
                         defaults={
                             'title': title,
                             'content': article_data.get('content', '')[:10000],  # Truncate content if too long
-                            'summary': summary[:200],  # Truncate summary to 200 chars
-                            'source': article_data.get('source_id', '')[:100],  # Truncate source name
+                            'summary': summary,  # No truncation needed for TextField
+                            'source': article_data.get('source_id', '')[:200],  # Truncate source name
                             'published_at': pub_date,
                             'image_url': article_data.get('image_url'),
                             'is_breaking': article_data.get('is_breaking', False),

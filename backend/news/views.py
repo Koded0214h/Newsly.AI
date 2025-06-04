@@ -49,7 +49,7 @@ def register1(request):
         form = RegisterForm_Personal()
         print("GET request to register1, session data:", request.session.get('registration_data'))
     
-    return render(request, 'register.html', {'registerform': form})
+    return render(request, 'register.html', {'form': form})
 
 def register2(request):
     # Check if user has completed first step
@@ -68,7 +68,8 @@ def register2(request):
                 email=personal_data['email'],
                 password=personal_data['password1'],
                 first_name=personal_data['first_name'],
-                last_name=personal_data['last_name']
+                last_name=personal_data['last_name'],
+                country=personal_data['country']  # Add country field
             )
             
             # Set additional fields from form
@@ -425,9 +426,11 @@ def profile(request):
 @login_required
 def update_profile(request):
     if request.method == 'POST':
-        name = request.POST.get('name')
-        if name:
-            request.user.name = name
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        if first_name and last_name:
+            request.user.first_name = first_name
+            request.user.last_name = last_name
             request.user.save()
             messages.success(request, 'Profile updated successfully')
     return redirect('profile')
