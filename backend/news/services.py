@@ -92,6 +92,9 @@ def fetch_articles_from_newsdata(country_code='ng'):
                     if pub_date:
                         pub_date = timezone.make_aware(datetime.fromisoformat(pub_date.replace('Z', '+00:00')))
                     
+                    # Get or create default category
+                    default_category, _ = Category.objects.get_or_create(name='General')
+                    
                     # Create or update article
                     article, created = Article.objects.get_or_create(
                         url=article_data['link'],
@@ -99,10 +102,11 @@ def fetch_articles_from_newsdata(country_code='ng'):
                             'title': title,
                             'content': article_data.get('content', '')[:10000],  # Truncate content if too long
                             'summary': summary,  # No truncation needed for TextField
-                            'source': article_data.get('source_id', '')[:200],  # Truncate source name
+                            'source': f"{article_data.get('source_id', '')[:200]}_{country_code}",  # Include country in source
                             'published_at': pub_date,
                             'image_url': article_data.get('image_url'),
                             'is_breaking': article_data.get('is_breaking', False),
+                            'category': default_category,  # Assign default category
                         }
                     )
                     

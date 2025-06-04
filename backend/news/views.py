@@ -152,21 +152,22 @@ def home(request):
                 user_prefs.categories.set(default_categories)
                 user_prefs.save()
             
-            # Get categories based on user preferences
-            preferred_categories = user_prefs.categories.all()
+            # Get articles based on user preferences and country
+            articles = Article.objects.filter(
+                category__in=user_prefs.categories.all(),
+                published_at__isnull=False
+            ).order_by('-published_at')
             
-            # Get articles from preferred categories
-            if preferred_categories.exists():
-                articles = Article.objects.filter(category__in=preferred_categories).order_by('-created_at')
-            else:
-                # If no categories are set, show all articles
-                articles = Article.objects.all().order_by('-created_at')
+            # Apply country filter
+            if hasattr(request.user, 'country'):
+                articles = articles.filter(source__country=request.user.country)
+                
         except Exception as e:
             # If there's any error, show all articles
-            articles = Article.objects.all().order_by('-created_at')
+            articles = Article.objects.all().order_by('-published_at')
     else:
         # For non-authenticated users, show all articles
-        articles = Article.objects.all().order_by('-created_at')
+        articles = Article.objects.all().order_by('-published_at')
 
     # Pagination
     paginator = Paginator(articles, 9)  # Show 9 articles per page (3x3 grid)
