@@ -35,7 +35,7 @@ def get_user_feed(user, toggle='all'):
         
         # Apply country filter
         if hasattr(user, 'country') and user.country:
-            articles = articles.filter(source__endswith=f"_{user.country}")
+            articles = articles.filter(source__iendswith=f"_{user.country.lower()}")
         
         # Apply toggle filter
         if toggle == 'breaking':
