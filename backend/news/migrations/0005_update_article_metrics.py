@@ -1,5 +1,28 @@
 from django.db import migrations
-from news.services import analyze_sentiment, analyze_reading_level
+from textblob import TextBlob
+
+def analyze_sentiment(text):
+    try:
+        blob = TextBlob(text)
+        return blob.sentiment.polarity  # -1 to 1
+    except Exception as e:
+        print(f"Error in analyze_sentiment: {str(e)}")
+        return 0
+
+def analyze_reading_level(text):
+    try:
+        blob = TextBlob(text)
+        # Use average sentence length as a proxy for reading level
+        sentences = blob.sentences
+        if not sentences:
+            return 0
+        avg_sentence_length = sum(len(sentence.words) for sentence in sentences) / len(sentences)
+        # Map average sentence length to a scale 1-10
+        score = min(max((avg_sentence_length - 5) / 3, 1), 10)
+        return score
+    except Exception as e:
+        print(f"Error in analyze_reading_level: {str(e)}")
+        return 0
 
 def update_article_metrics(apps, schema_editor):
     Article = apps.get_model('news', 'Article')
