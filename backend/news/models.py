@@ -115,7 +115,7 @@ class Category(models.Model):
 
 class Article(models.Model):
     title = models.CharField(max_length=300)
-    slug = models.SlugField(max_length=320, unique=True, blank=True)
+    slug = models.SlugField(max_length=320, blank=True)
     url = models.URLField(unique=True)
     content = models.TextField()
     summary = models.TextField(blank=True)
