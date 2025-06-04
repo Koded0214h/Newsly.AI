@@ -21,7 +21,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import datetime
 
-from .models import CustomUser, Article, UserPreference, Category
+from .models import CustomUser, Article, UserPreference, Category, UserPreferences
 from .forms import RegisterForm_News, RegisterForm_Personal
 from .services import get_user_feed
 from .utils.email_utils import send_welcome_email
@@ -133,58 +133,41 @@ def user_logout(request):
     logout(request)
     return redirect('index')
 
-@login_required
 def home(request):
-    # Get filter parameters
-    selected_category = request.GET.get('category', '').lower()
-    search_query = request.GET.get('search', '')
-    page = request.GET.get('page', 1)
-    
-    # Get all categories for filter
-    categories = Category.objects.all()
-    
-    # Base query for articles
-    articles = Article.objects.all().order_by('-created_at')
-    
-    # Apply category filter
-    if selected_category:
-        articles = articles.filter(category__name__iexact=selected_category)
-    
-    # Apply search filter
-    if search_query:
-        articles = articles.filter(
-            Q(title__icontains=search_query) |
-            Q(content__icontains=search_query) |
-            Q(summary__icontains=search_query)
-        )
-    
-    # Pagination
-    paginator = Paginator(articles, 12)  # Show 12 articles per page
-    articles_page = paginator.get_page(page)
-    
-    # Get user's interests for personalization
-    user_interests = request.user.interests.all()
-    
-    context = {
-        'articles': articles_page,
-        'categories': categories,
-        'selected_category': selected_category,
-        'search_query': search_query,
-        'page_obj': articles_page,
-        'user_interests': user_interests,
-    }
-    return render(request, 'home.html', context)
+    # Get user preferences if user is authenticated
+    if request.user.is_authenticated:
+        try:
+            user_prefs = UserPreferences.objects.get(user=request.user)
+            # Get categories based on user preferences
+            preferred_categories = user_prefs.categories.all()
+            # Get articles from preferred categories
+            articles = Article.objects.filter(category__in=preferred_categories).order_by('-created_at')
+        except UserPreferences.DoesNotExist:
+            # If no preferences set, show all articles
+            articles = Article.objects.all().order_by('-created_at')
+    else:
+        # For non-authenticated users, show all articles
+        articles = Article.objects.all().order_by('-created_at')
 
+    # Pagination
+    paginator = Paginator(articles, 9)  # Show 9 articles per page (3x3 grid)
+    page_number = request.GET.get('page')
+    articles = paginator.get_page(page_number)
+
+    return render(request, 'home.html', {
+        'articles': articles,
+    })
+
+@login_required
 def article_detail(request, article_id):
     article = get_object_or_404(Article, id=article_id)
     
-    from .services import analyze_sentiment, analyze_reading_level
-    sentiment_score = analyze_sentiment(article.content) or 0
-    reading_level = analyze_reading_level(article.content) or 0
+    # Calculate sentiment score and reading level
+    sentiment_score = article.sentiment_score
+    reading_level = article.reading_level
     
     return render(request, 'article_detail.html', {
         'article': article,
-        'generated_summary': '',
         'sentiment_score': sentiment_score,
         'reading_level': reading_level,
     })
@@ -407,11 +390,19 @@ def privacy(request):
 
 @login_required
 def profile(request):
+    user_prefs, created = UserPreferences.objects.get_or_create(user=request.user)
     categories = Category.objects.all()
-    context = {
-        'categories': categories
-    }
-    return render(request, 'profile.html', context)
+    
+    if request.method == 'POST':
+        # Update user preferences
+        selected_categories = request.POST.getlist('categories')
+        user_prefs.categories.set(selected_categories)
+        user_prefs.save()
+        
+    return render(request, 'profile.html', {
+        'user_prefs': user_prefs,
+        'categories': categories,
+    })
 
 @login_required
 def update_profile(request):
@@ -421,24 +412,6 @@ def update_profile(request):
             request.user.name = name
             request.user.save()
             messages.success(request, 'Profile updated successfully')
-    return redirect('profile')
-
-@login_required
-def update_preferences(request):
-    if request.method == 'POST':
-        frequency = request.POST.get('frequency')
-        preferred_time = request.POST.get('preferred_time')
-        interests = request.POST.getlist('interests')
-
-        if frequency:
-            request.user.frequency = frequency
-        if preferred_time:
-            request.user.preferred_time = preferred_time
-        if interests:
-            request.user.interests.set(interests)
-
-        request.user.save()
-        messages.success(request, 'Preferences updated successfully')
     return redirect('profile')
 
 @login_required

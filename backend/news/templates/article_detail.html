@@ -79,7 +79,9 @@
             
             <div class="mt-4 d-flex gap-2 justify-content-center justify-content-md-start">
                 <a href="{% url 'home' %}" class="btn btn-outline-primary">Back to Home</a>
-                <a href="{% url 'home' %}?category={{ article.category.name|lower }}" class="btn btn-outline-secondary">More {{ article.category.name }} Articles</a>
+                {% if article.url %}
+                <a href="{{ article.url }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">Read Original Article</a>
+                {% endif %}
             </div>
         </div>
     </div>

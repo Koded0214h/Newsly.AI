@@ -7,91 +7,75 @@
 
 {% block content %}
 <div class="container mt-4">
-    <!-- Search and Filter Section -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <form method="get" class="d-flex">
-                <input type="text" name="search" class="form-control me-2" placeholder="Search articles..." value="{{ search_query }}">
-                <button type="submit" class="btn btn-primary">Search</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Category Filter -->
-    <div class="category-filter mb-4">
-        <div class="btn-group" role="group">
-            <a href="{% url 'home' %}" 
-               class="btn {% if not selected_category %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                All
-            </a>
-            {% for category in categories %}
-            <a href="{% url 'home' %}?category={{ category.name|lower }}" 
-               class="btn {% if selected_category == category.name|lower %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                {{ category.name }}
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Articles Grid -->
     <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Latest News</h1>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for article in articles %}
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-            <div class="card h-100 shadow rounded">
+        <div class="col">
+            <div class="card h-100 shadow-sm">
                 {% if article.image_url %}
-                <img src="{{ article.image_url }}" class="card-img-top rounded-top" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/images/placeholder.png';">
+                <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}" style="height: 200px; object-fit: cover;" onerror="this.onerror=null;this.src='/static/images/placeholder.png';">
                 {% else %}
-                <img src="/static/images/placeholder.png" class="card-img-top rounded-top" alt="Placeholder image">
+                <img src="/static/images/placeholder.png" class="card-img-top" alt="Placeholder image" style="height: 200px; object-fit: cover;">
                 {% endif %}
-                <div class="card-body d-flex flex-column">
-                    <span class="badge bg-primary mb-2">{{ article.category.name }}</span>
-                    <h5 class="card-title fw-bold">{{ article.title }}</h5>
-                    <p class="card-text" style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">{{ article.summary|striptags }}</p>
-                    <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <a href="{% url 'article_detail' article.id %}" class="btn btn-sm btn-outline-primary btn-rounded">Read More</a>
-                        <small class="text-muted">{{ article.created_at|timesince }} ago</small>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-primary">{{ article.category.name }}</span>
+                        <small class="text-muted">{{ article.created_at|date:"M d, Y" }}</small>
                     </div>
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    {% if article.summary %}
+                    <p class="card-text">{{ article.summary|striptags|truncatechars:150 }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white border-top-0">
+                    <a href="{% url 'article_detail' article.id %}" class="btn btn-outline-primary w-100">Read More</a>
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12">
             <div class="alert alert-info">
-                No articles found. Try adjusting your filters or check back later for new content.
+                No articles found. Please check back later.
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
-            </li>
-            {% endif %}
+    {% if articles.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if articles.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
 
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <li class="page-item active">
-                <span class="page-link">{{ num }}</span>
-            </li>
-            {% else %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
-            </li>
-            {% endif %}
-            {% endfor %}
+                    {% for num in articles.paginator.page_range %}
+                    <li class="page-item {% if articles.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
 
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+                    {% if articles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ articles.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
     {% endif %}
 </div>
 {% endblock %} 
