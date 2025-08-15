@@ -19,22 +19,53 @@ class NewsFetcher:
 
     def fetch_articles(self, query="Nigeria", language="en", country=None):
         if self.source == "newsdata":
-            url = f"https://newsdata.io/api/1/news?apikey={self.api_keys['newsdata']}&q={query}&language={language}"
-            if country:
-                url += f"&country={country}"
+            base_url = "https://newsdata.io/api/1/news"
+            params = {
+                "apikey": self.api_keys['newsdata'],
+                "q": query,
+                "language": language.lower() if language else None,
+                "country": country.lower() if country else None,
+            }
+            
+            # Remove None values from params
+            params = {k: v for k, v in params.items() if v is not None}
+            
+            try:
+                resp = requests.get(base_url, params=params)
+                resp.raise_for_status()  # Raises HTTPError for bad responses
+                data = resp.json()
+                
+                if data.get("status") == "error":
+                    error_msg = data.get("results", {}).get("message", "Unknown NewsData API error")
+                    raise ValueError(f"NewsData API error: {error_msg}")
+                    
+                return self._parse_articles(data)
+                
+            except requests.exceptions.RequestException as e:
+                raise ValueError(f"Request failed: {str(e)}")
+
         elif self.source == "newsapi":
             url = f"https://newsapi.org/v2/everything?q={query}&language={language}&apiKey={self.api_keys['newsapi']}"
+
         elif self.source == "gnews":
             url = f"https://gnews.io/api/v4/search?q={query}&lang={language}"
             if country:
                 url += f"&country={country}"
             url += f"&token={self.api_keys['gnews']}"
+
         else:
             raise ValueError("Unsupported news source")
 
         resp = requests.get(url)
         data = resp.json()
+
+        # Log the request URL and raw response if something goes wrong
+        if data.get("status") == "error":
+            raise ValueError(f"NewsData API error: {data}")
+
         return self._parse_articles(data)
+
+
 
     def _parse_articles(self, data):
         articles = []
@@ -46,6 +77,7 @@ class NewsFetcher:
                     "summary": item.get("description", ""),
                     "published_at": timezone.make_aware(parse_datetime(item.get("pubDate"))) if item.get("pubDate") else None,
                     "source": item.get("source_id", ""),
+                    "country": item.get("country", ""),
                     "image_url": item.get("image_url"),
                     "categories": item.get("category", []),
                     "content": item.get("content", ""),

@@ -20,6 +20,16 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
 
         return self.create_user(email, password, **extra_fields)
+    
+class Topic(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
@@ -28,7 +38,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     
     # Basic preferences
     country = models.CharField(max_length=2, blank=True)
-    interests = models.JSONField(default=list, blank=True)  # store category strings or IDs
+    interests = models.ManyToManyField(Topic, related_name='interests')
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -67,17 +77,6 @@ class UserPreference(models.Model):
         return f"{self.user.email}'s Preferences"
 
 
-class Topic(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -99,6 +98,7 @@ class Article(models.Model):
     sentiment_score = models.FloatField(null=True, blank=True)  # -1 to 1
     reading_level = models.FloatField(null=True, blank=True)  # Flesch-Kincaid, etc.
     published_at = models.DateTimeField(null=True, blank=True)
+    country = models.CharField(max_length=2, blank=True, null=True)
     source = models.CharField(max_length=200, blank=True)
     is_breaking = models.BooleanField(default=False)
     image_url = models.URLField(null=True, blank=True)
